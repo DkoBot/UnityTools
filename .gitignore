@@ -361,3 +361,19 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/AssetsTools
+/Misc
+/Src
+/Imgui
+/Header/base.h
+/Header/class.h
+/Header/Conini.h
+/Header/engine.h
+/Header/framework.h
+/Header/hooks.h
+/Header/IconsFontAwesome6.h
+/Header/utils.h
+/UnityTools.zip
+/UnityTools.sln
+/UnityTools.vcxproj
+/UnityTools.vcxproj.filters
