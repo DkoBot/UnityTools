@@ -1,0 +1,30 @@
+﻿DO_FUNC(Il2CppArray*, FindObjectsOfType, (void*), "UnityEngine.CoreModule", "UnityEngine", "Object", "Object[] FindObjectsOfType(Type type);");
+DO_FUNC(Il2CppArray*, FindObjectsOfTypeAll, (void*), "UnityEngine.CoreModule", "UnityEngine", "Resources", "Object[] FindObjectsOfTypeAll(Type type);");
+DO_FUNC(Il2CppArray*, FindObjectsByTypeBool , (void*,bool), "UnityEngine.CoreModule", "UnityEngine", "Object", "Object[] FindObjectsOfType(Type type,Boolean includeInactive);");
+//DO_FUNC(Il2CppArray*, FindGameObjectsWithTag, (Il2CppString*), "UnityEngine.CoreModule", "UnityEngine", "GameObject", "GameObject[] FindGameObjectsWithTag(String tag);");
+DO_FUNC(void*, GetType, (Il2CppString*), "mscorlib", "System", "Type", "Type GetType(String typeName);");
+DO_FUNC(void*, PtrToStringAnsi, (const char*), "mscorlib", "System.Runtime.InteropServices", "Marshal", "String PtrToStringAnsi(IntPtr ptr);");
+DO_FUNC(Camera*, GetMainCamera, (), "UnityEngine.CoreModule", "UnityEngine", "Camera", "Camera get_main();");
+DO_FUNC(void*, GameObject_Find, (Il2CppString*), "UnityEngine.CoreModule", "UnityEngine", "GameObject", "GameObject Find(String name);");
+
+DO_FUNC(Transform*, GetTransform, (GameObject*), "UnityEngine.CoreModule", "UnityEngine", "GameObject", "Transform get_transform();");
+DO_FUNC(void, SetActive, (GameObject*,bool), "UnityEngine.CoreModule", "UnityEngine", "GameObject", "Void SetActive(Boolean value);");
+DO_FUNC(Transform*, GetTransform_Component, (void*), "UnityEngine.CoreModule", "UnityEngine", "Component", "Transform get_transform();");
+DO_FUNC(Vector3, GetPosition, (Transform*), "UnityEngine.CoreModule", "UnityEngine", "Transform", "Vector3 get_position();");
+DO_FUNC(Vector3, GetEulerAngles, (Transform*), "UnityEngine.CoreModule", "UnityEngine", "Transform", "Vector3 get_eulerAngles();");
+DO_FUNC(GameObject*, GetGameObject, (void*), "UnityEngine.CoreModule", "UnityEngine", "Component", "GameObject get_gameObject();");
+DO_FUNC(Il2CppString*, Gettag, (void*), "UnityEngine.CoreModule", "UnityEngine", "Component", "String get_tag();");
+DO_FUNC(int, GetChildCount, (Transform*), "UnityEngine.CoreModule", "UnityEngine", "Transform", "Int32 get_childCount();");
+DO_FUNC(Transform*, GetChild, (Transform*, int), "UnityEngine.CoreModule", "UnityEngine", "Transform", "Transform GetChild(Int32 index);");
+DO_FUNC(Vector3, GetForward, (Transform*), "UnityEngine.CoreModule", "UnityEngine", "Transform", "Vector3 get_forward();");
+DO_FUNC(Shader*, FindShader, (Il2CppString*), "UnityEngine.CoreModule", "UnityEngine", "Shader", "Shader Find(String name);");
+
+DO_FUNC(void, SetGlobalColor, (Il2CppString*,Color), "UnityEngine.CoreModule", "UnityEngine", "Shader", "Void SetGlobalColor(String name,Color value);");
+DO_FUNC(void, SetGlobalMatrix, (Il2CppString*,Matrix4x4), "UnityEngine.CoreModule", "UnityEngine", "Shader", "Void SetGlobalMatrix(String name,Matrix4x4 value);");
+DO_FUNC(void, SetGlobalVector, (Il2CppString*,Vector4), "UnityEngine.CoreModule", "UnityEngine", "Shader", "Void SetGlobalVector(String name,Vector4 value);");
+DO_FUNC(void, SetGlobalFloat, (Il2CppString*,float), "UnityEngine.CoreModule", "UnityEngine", "Shader", "Void SetGlobalFloat(String name,Single value);");
+DO_FUNC(void, SetGlobalInt, (Il2CppString*,int), "UnityEngine.CoreModule", "UnityEngine", "Shader", "Void SetGlobalInt(String name,Int32 value);");
+DO_FUNC(void, SetMaximumLOD, (void*, int), "UnityEngine.CoreModule", "UnityEngine", "Shader", "Void set_maximumLOD(Int32 value);");
+DO_FUNC(void, SetGlobalMaximumLOD, (int), "UnityEngine.CoreModule", "UnityEngine", "QualitySettings", "Void set_maximumLODLevel(Int32 value);");
+DO_FUNC(int, GetPassCount, (void*), "UnityEngine.CoreModule", "UnityEngine", "Shader", "Int32 get_passCount();");
+DO_FUNC(Il2CppString*, GetUnityVersion, (), "UnityEngine.CoreModule", "UnityEngine", "Application", "String get_unityVersion();");
