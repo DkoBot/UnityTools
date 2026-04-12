@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "engine.h"
 #include "base.h"
 #include <vector>
@@ -24,14 +24,14 @@ struct MaterialPropertyInfo {
 
 class globalmaterial {
 public:
-	static std::map<string, void*> materialNames;  // 材质名称到实例地址的字典
-	static std::map<string, void*> cachedMaterialNames;  // 缓存上一次的材质字典
+	static map<string, void*> materialNames;  // 材质名称到实例地址的字典
+	static map<string, void*> cachedMaterialNames;  // 缓存上一次的材质字典
 	static Material* temp_material;  // 临时材质指针
-	static std::vector<MaterialPropertyInfo> cachedProperties;  // 缓存的属性列表
+	static vector<MaterialPropertyInfo> cachedProperties;  // 缓存的属性列表
 	static Material* cachedSelectedMaterial;  // 缓存选中的材质
 	static bool init();
 	static bool get_material_by_name(const string& name);
-    static std::vector<MaterialPropertyInfo> GetMaterialProperties();
+    static vector<MaterialPropertyInfo> GetMaterialProperties();
 	static void GetMaterial();
 };
 

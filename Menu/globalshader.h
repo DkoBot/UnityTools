@@ -20,7 +20,6 @@ struct ShaderPropertyInfo {
         colorValue.r = colorValue.g = colorValue.b = colorValue.a = 0.0f;
     }
 };
-
 class globalshader
 {
 public:

@@ -1,9 +1,9 @@
-#include "globalmaterial.h"
+﻿#include "globalmaterial.h"
 
-std::map<string, void*> globalmaterial::materialNames;
-std::map<string, void*> globalmaterial::cachedMaterialNames;
+map<string, void*> globalmaterial::materialNames;
+map<string, void*> globalmaterial::cachedMaterialNames;
 Material* globalmaterial::temp_material = nullptr;
-std::vector<MaterialPropertyInfo> globalmaterial::cachedProperties;
+vector<MaterialPropertyInfo> globalmaterial::cachedProperties;
 Material* globalmaterial::cachedSelectedMaterial = nullptr;
 
 
@@ -43,7 +43,7 @@ bool globalmaterial::init() {
         if (!getNameMethod) return false;
 
         // 用于统计同名材质的数量
-        std::map<string, int> nameCount;
+        map<string, int> nameCount;
 
         // 遍历所有 Material 对象并获取名称
         for (int i = 0; i < materialArray->max_length; ++i) {

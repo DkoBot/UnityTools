@@ -170,7 +170,6 @@ vector<ShaderPropertyInfo> globalshader::GetShaderProperties() {
     
     return properties;
 }
-
 void globalshader::GetShader() {
     GetShaderProperties();
 }
