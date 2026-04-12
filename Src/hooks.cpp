@@ -161,46 +161,49 @@ namespace Hooks
 	HRESULT WINAPI hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
 		// 1. 初始化 DirectX11 和 ImGui
 		{
-		if (!bDx11Init) {
-			pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&pDevice);
-			pDevice->GetImmediateContext(&pDeviceContext);
-			ID3D11Texture2D* pBackBuffer;
-			pSwapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
-			pDevice->CreateRenderTargetView(pBackBuffer, nullptr, &pRenderTargetView);
-			pBackBuffer->Release();
-			oWndProc = (WNDPROC)SetWindowLongPtr(Engine::hWnd, GWLP_WNDPROC, (LONG_PTR)hkWndProc);
-			hwnd = Engine::hWnd; // 初始化窗口句柄
-			if (!bDx11ReInit) {
-				ImGui::CreateContext();
-				ImGui::StyleColorsDark();
-				ImGui_ImplWin32_Init(Engine::hWnd);
-				ImGuiIO& Io = ImGui::GetIO();
-				Io.IniFilename = nullptr; // 保存配置文件
-				Io.LogFilename = nullptr;
-				//Io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\msyh.ttc", 20.0f, NULL, Io.Fonts->GetGlyphRangesChineseFull());
-				float baseFontSize = 22.0f;
-				ImFont* font = Io.Fonts->AddFontFromFileTTF
-				(
-					"c:\\Windows\\Fonts\\msyh.ttc",
-					baseFontSize,
-					nullptr,
-					Io.Fonts->GetGlyphRangesChineseFull()
-				);
-				IM_ASSERT(font != nullptr);
-				//SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE);
-				float iconFontSize = baseFontSize * 2.0f / 3.0f;
-				static const ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_16_FA,0 };
-				ImFontConfig icons_config;
-				icons_config.MergeMode = true;
-				icons_config.PixelSnapH = true;
-				icons_config.GlyphMinAdvanceX = iconFontSize;
-				Io.Fonts->AddFontFromMemoryCompressedBase85TTF(fa_solid_900_compressed_data_base85, iconFontSize, &icons_config, icons_ranges);
-				il2cpp_thread_attach(il2cpp_domain_get());
+			if (!bDx11Init) {
+				pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&pDevice);
+				pDevice->GetImmediateContext(&pDeviceContext);
+				ID3D11Texture2D* pBackBuffer;
+				pSwapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
+				pDevice->CreateRenderTargetView(pBackBuffer, nullptr, &pRenderTargetView);
+				pBackBuffer->Release();
+				oWndProc = (WNDPROC)SetWindowLongPtr(Engine::hWnd, GWLP_WNDPROC, (LONG_PTR)hkWndProc);
+				hwnd = Engine::hWnd; // 初始化窗口句柄
+				if (!bDx11ReInit) {
+					ImGui::CreateContext();
+					ImGui::StyleColorsDark();
+					ImGui_ImplWin32_Init(Engine::hWnd);
+					ImGuiIO& Io = ImGui::GetIO();
+					Io.IniFilename = nullptr; // 保存配置文件
+					Io.LogFilename = nullptr;
+					//Io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\msyh.ttc", 20.0f, NULL, Io.Fonts->GetGlyphRangesChineseFull());
+					float baseFontSize = 22.0f;
+					ImFont* font = Io.Fonts->AddFontFromFileTTF
+					(
+						"c:\\Windows\\Fonts\\msyh.ttc",
+						baseFontSize,
+						nullptr,
+						Io.Fonts->GetGlyphRangesChineseFull()
+					);
+					IM_ASSERT(font != nullptr);
+					
+					// 设置默认字体为中文字体
+					Io.FontDefault = font;
+					//SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE);
+					float iconFontSize = baseFontSize * 2.0f / 3.0f;
+					static const ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_16_FA,0 };
+					ImFontConfig icons_config;
+					icons_config.MergeMode = true;
+					icons_config.PixelSnapH = true;
+					icons_config.GlyphMinAdvanceX = iconFontSize;
+					Io.Fonts->AddFontFromMemoryCompressedBase85TTF(fa_solid_900_compressed_data_base85, iconFontSize, &icons_config, icons_ranges);
+					il2cpp_thread_attach(il2cpp_domain_get());
+				}
+				ImGui_ImplDX11_Init(pDevice, pDeviceContext);
+				bDx11Init = true;
+				bDx11ReInit = true;
 			}
-			ImGui_ImplDX11_Init(pDevice, pDeviceContext);
-			bDx11Init = true;
-			bDx11ReInit = true;
-		}
 			// 2. 控制鼠标光标显示
 			static int originalCursorCount = 0;
 			static bool initialized = false;
@@ -210,7 +213,7 @@ namespace Hooks
 				// 通过临时增加计数来获取当前计数，然后恢复
 				int temp = ShowCursor(TRUE);
 				originalCursorCount = temp - 1;
-		ShowCursor(FALSE);
+				ShowCursor(FALSE);
 				initialized = true;
 			}
 
@@ -237,10 +240,10 @@ namespace Hooks
 			int currentCount = ShowCursor(TRUE);
 			ShowCursor(FALSE); // 恢复计数
 			bool cursorVisible = currentCount >= 0;
-		// 开始绘制
-		ImGui_ImplDX11_NewFrame();
-		ImGui_ImplWin32_NewFrame();
-		ImGui::NewFrame();
+			// 开始绘制
+			ImGui_ImplDX11_NewFrame();
+			ImGui_ImplWin32_NewFrame();
+			ImGui::NewFrame();
 		}
 
 		// 2. 绘制菜单和窗口
@@ -282,7 +285,7 @@ namespace Hooks
 			if (menu_visible && ImGui::BeginMainMenuBar()) {
 				/* ---------- 彩虹渐变标题 ---------- */
 				{
-					const char* txt = "Unity Tools 2026.02.21";
+					const char* txt = "Unity Tools 2026.04.12";
 					float speed = 0.3f;                 // 色相滚动速度（弧度/秒）
 					float step = 1.0f / strlen(txt);   // 每字色相步进
 
@@ -363,9 +366,10 @@ namespace Hooks
 					char timeStr[20];
 					strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", &tm);
 
-					// 获取Unity版本
-					string unityVersion = il2CppStringToGbk(GetUnityVersion());
-
+					string unityVersion = "Not Find Version";
+					if ((void*)GetUnityVersion()) {
+						unityVersion = il2CppStringToGbk(GetUnityVersion());
+					}
 					// 构建完整文本并计算宽度
 					char fpsText[32];
 					char dateTimeText[64];
@@ -493,6 +497,21 @@ namespace Hooks
 					static int            curResultIdx = -1;
 					static char           comboPreview[128] = "";
 					static char           g_dumpAddr[256] = "";
+					static char           g_instanceAddr[256] = ""; // 结构分析器实例地址
+					static bool           show_large_file_confirm = false; // 大文件确认弹窗
+					static int32_t        pending_dump_size = 0; // 待确认的dump大小
+					static uintptr_t      pending_metadata_addr = 0; // 待确认的metadata地址
+					static std::string    pending_save_path = ""; // 待确认的保存路径
+					static bool           show_structure_analyzer = false; // 结构分析器弹窗标志
+					static bool           parsed = false; // 是否已解析
+					static std::string    parsedAssembly; // 解析的程序集
+					static std::string    parsedNamespace; // 解析的命名空间
+					static std::string    parsedClass; // 解析的类名
+					static uintptr_t      parsedAddr = 0; // 解析的实例地址
+					static bool           show_find_refs = false; // 显示查找引用窗口
+					static std::vector<std::string> refClasses; // 引用该类的类列表
+					static bool           searching_refs = false; // 是否正在搜索引用
+					static bool           refs_searched = false; // 是否已完成搜索
 					if (!is_first_open) {
 						if (globalmanagement::initialization()) {
 							g_assemblies = globalmanagement::assemblies;
@@ -652,20 +671,15 @@ namespace Hooks
 										}
 									}
 
-									if (dotCount == 1) {
-										// 只有一个点号，说明这是全局类（格式：ClassName）
-										g_selNamespace = "None";
-										// g_selClass 已经是完整的类名
-									}
-									else if (dotCount > 1 && lastDotPos != string::npos) {
-										// 有多个点号，通过最后一个点号分割
+									if (lastDotPos != string::npos) {
+										// 有点号，通过最后一个点号分割
 										g_selNamespace = c.substr(0, lastDotPos);  // 命名空间部分
 										g_selClass = c.substr(lastDotPos + 1);    // 类名部分
 									}
 									else {
-										// 没有点号或异常情况
-										g_selNamespace = "None";
-										// g_selClass 保持不变
+										// 没有点号，说明是全局类（没有命名空间）
+										g_selNamespace = "";
+										// g_selClass 保持不变（就是完整的类名）
 									}
 
 									// 获取选中类的变量和方法信息
@@ -746,7 +760,8 @@ namespace Hooks
 											g_objectPointers.push_back(reinterpret_cast<void*>(addr));
 										else
 											g_objectPointers.push_back(nullptr);
-									} else
+									}
+									else
 										g_objectPointers.push_back(nullptr);
 								}
 								curResultIdx = -1; comboPreview[0] = 0;
@@ -855,11 +870,13 @@ namespace Hooks
 											char buf[64];
 											sprintf_s(buf, sizeof(buf), "%.4g", memOp.Read_flaot(fieldAddr));
 											varValueStrings[i] = buf;
-										} else if (t == "System.Double" || t == "double") {
+										}
+										else if (t == "System.Double" || t == "double") {
 											char buf[64];
 											sprintf_s(buf, sizeof(buf), "%.4g", memOp.Read_double(fieldAddr));
 											varValueStrings[i] = buf;
-										} else if (t == "System.Boolean" || t == "bool")
+										}
+										else if (t == "System.Boolean" || t == "bool")
 											varValueStrings[i] = memOp.Read_bool(fieldAddr) ? "true" : "false";
 										else if (t == "System.Byte" || t == "byte")
 											varValueStrings[i] = std::to_string((unsigned)memOp.Read_byte(fieldAddr));
@@ -869,13 +886,15 @@ namespace Hooks
 												varValueStrings[i] = memOp.Read_il2cppString(strPtr);
 											else
 												varValueStrings[i] = "(null)";
-										} else {
+										}
+										else {
 											char buf[32];
-											sprintf_s(buf, sizeof(buf), "0x%llX", (unsigned long long)(uintptr_t)*(void**)fieldAddr);
+											sprintf_s(buf, sizeof(buf), "0x%llX", (unsigned long long)(uintptr_t) * (void**)fieldAddr);
 											varValueStrings[i] = buf;
 										}
 									}
-								} else {
+								}
+								else {
 									for (size_t i = 0; i < globalmanagement::variables.size(); ++i)
 										varValueStrings[i] = "—";
 								}
@@ -926,7 +945,8 @@ namespace Hooks
 											}
 											ImGui::EndCombo();
 										}
-									} else if (editingVarIndex == (int)vi) {
+									}
+									else if (editingVarIndex == (int)vi) {
 										char idBuf[64];
 										sprintf_s(idBuf, sizeof(idBuf), "##varValueEdit_%zu", vi);
 										ImGui::SetNextItemWidth(-FLT_MIN);
@@ -938,24 +958,30 @@ namespace Hooks
 												if (vtype == "System.Int32" || vtype == "System.UInt32" || vtype == "int" || vtype == "uint") {
 													int v = std::stoi(valueEditBuf);
 													ok = memOp.write_int(fieldAddr, v);
-												} else if (vtype == "System.Single" || vtype == "float") {
+												}
+												else if (vtype == "System.Single" || vtype == "float") {
 													float v = std::stof(valueEditBuf);
 													ok = memOp.write_float(fieldAddr, v);
-												} else if (vtype == "System.Double" || vtype == "double") {
+												}
+												else if (vtype == "System.Double" || vtype == "double") {
 													double v = std::stod(valueEditBuf);
 													ok = memOp.write_double(fieldAddr, v);
-												} else if (vtype == "System.Byte" || vtype == "byte") {
+												}
+												else if (vtype == "System.Byte" || vtype == "byte") {
 													int v = std::stoi(valueEditBuf);
 													if (v < 0) v = 0; if (v > 255) v = 255;
 													ok = memOp.write_byte(fieldAddr, (uint8_t)v);
-												} else if (vtype == "System.String" || vtype == "string") {
+												}
+												else if (vtype == "System.String" || vtype == "string") {
 													ok = memOp.write_il2cppString(fieldAddr, string(valueEditBuf));
 												}
-											} catch (...) { ok = false; }
+											}
+											catch (...) { ok = false; }
 											if (ok && vi < varValueStrings.size()) varValueStrings[vi] = valueEditBuf;
 											editingVarIndex = -1;
 										}
-									} else {
+									}
+									else {
 										ImGui::Text("%s", valueDisplay);
 										if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", valueDisplay);
 										if (canEdit && !isBoolType && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
@@ -1082,7 +1108,335 @@ namespace Hooks
 								}
 								ImGui::Separator();
 								if (ImGui::Button("结构解析器", ImVec2(-FLT_MIN, 0))) {
+									show_structure_analyzer = true;
+								}
 
+								// 结构分析器窗口
+								if (ImGui::Begin("结构分析器", &show_structure_analyzer, ImGuiWindowFlags_AlwaysAutoResize)) {
+									// 显示当前选择的类，处理没有命名空间的情况
+									std::string displayClass = g_selClass.empty() ? "未选择" : g_selClass;
+									if (!g_selNamespace.empty() && g_selNamespace != "None") {
+										displayClass = g_selNamespace + "." + g_selClass;
+									}
+									
+									// 使用紧凑的样式
+									ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 2));
+									ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 2));
+									
+									ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.9f, 1.0f), "当前类:");
+									ImGui::SameLine();
+									ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "%s", displayClass.c_str());
+									
+									ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.9f, 1.0f), "程序集:");
+									ImGui::SameLine();
+									ImGui::Text("%s", g_selAssembly.empty() ? "未选择" : g_selAssembly.c_str());
+									
+									ImGui::Separator();
+									
+									// 输入区域
+									ImGui::Text("实例地址 (Hex):");
+									ImGui::SameLine();
+									ImGui::SetNextItemWidth(250);
+									ImGui::InputText("##instanceAddr", g_instanceAddr, IM_ARRAYSIZE(g_instanceAddr));
+									
+									// 帮助提示
+									ImGui::SameLine();
+									ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "(如: 0x12345678)");
+									
+									// 按钮区域
+									ImGui::SetNextItemWidth(120);
+									if (ImGui::Button("解析")) {
+										// 解析地址
+										uintptr_t addr = 0;
+										const char* addrStr = g_instanceAddr;
+										if (addrStr && strlen(addrStr) > 0) {
+											if (strstr(addrStr, "0x") == addrStr || strstr(addrStr, "0X") == addrStr) {
+												addr = strtoull(addrStr, nullptr, 16);
+											}
+											else {
+												addr = strtoull(addrStr, nullptr, 16);
+											}
+										}
+
+										// 查找程序集
+										const Il2CppAssembly* assembly = nullptr;
+										if (!g_selAssembly.empty()) {
+											Il2CppDomain* domain = il2cpp_domain_get();
+											if (domain) {
+												assembly = il2cpp_domain_assembly_open(domain, g_selAssembly.c_str());
+											}
+										}
+
+										if (!assembly) {
+											ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "请选择有效的程序集");
+										}
+										else if (addr == 0) {
+											ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "请输入有效的实例地址");
+										}
+										else if (g_selClass.empty()) {
+											ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "请选择一个类");
+										}
+										else {
+											// 处理命名空间为空或为 "None" 的情况
+											std::string ns = g_selNamespace;
+											if (ns == "None") ns = "";
+
+											// 保存解析参数
+											parsedAssembly = g_selAssembly;
+											parsedNamespace = ns;
+											parsedClass = g_selClass;
+											parsedAddr = addr;
+											parsed = true;
+										}
+									}
+
+									ImGui::SameLine();
+									ImGui::SetNextItemWidth(80);
+									if (ImGui::Button("关闭")) {
+										memset(g_instanceAddr, 0, sizeof(g_instanceAddr));
+										parsed = false;
+										show_structure_analyzer = false;
+									}
+									
+									ImGui::SameLine();
+									ImGui::SetNextItemWidth(100);
+									if (ImGui::Button("查找引用")) {
+										// 开始搜索引用
+										refClasses.clear();
+										searching_refs = true;
+										refs_searched = false;
+										show_find_refs = true;
+										
+										// 调试：保存前几个找到的typeName用于分析
+										std::vector<std::string> debugTypeNames;
+										
+										// 搜索所有程序集中哪些类的字段引用了当前类
+										Il2CppDomain* domain = il2cpp_domain_get();
+										if (domain) {
+											size_t asmCount = 0;
+											const Il2CppAssembly** assemblies = il2cpp_domain_get_assemblies(domain, &asmCount);
+											
+											for (size_t a = 0; a < asmCount; a++) {
+												const Il2CppAssembly* asmPtr = assemblies[a];
+												if (!asmPtr) continue;
+												
+												const Il2CppImage* image = il2cpp_assembly_get_image(asmPtr);
+												if (!image) continue;
+												
+												size_t classCount = il2cpp_image_get_class_count(image);
+												for (size_t c = 0; c < classCount; c++) {
+													Il2CppClass* klass = (Il2CppClass*)il2cpp_image_get_class(image, c);
+													if (!klass) continue;
+												
+													// 遍历该类的所有字段
+													void* fieldIter = nullptr;
+													FieldInfo* field = nullptr;
+													while ((field = il2cpp_class_get_fields(klass, &fieldIter)) != nullptr) {
+														if (!field || !field->name) continue;
+														
+														Il2CppType* fieldType = (Il2CppType*)field->type;
+														if (!fieldType) continue;
+														
+												const char* typeName = il2cpp_type_get_name(fieldType);
+												if (!typeName) continue;
+												
+												// 检查字段类型是否匹配目标类
+												std::string fieldTypeName(typeName);
+												
+												// 简单匹配逻辑：
+												// 1. 直接比较类名
+												// 2. 或者类型名以 ".类名" 结尾
+												// 3. 或者类型名以 "<类名" 结尾（泛型）
+												bool isMatch = false;
+												
+												// 精确匹配类名（字段类型名就是类名）
+												if (fieldTypeName == parsedClass) {
+													isMatch = true;
+												}
+												// 检查是否以 ".类名" 或 "<类名" 结尾
+												else {
+													std::string suffixDot = "." + parsedClass;
+													std::string suffixAngle = "<" + parsedClass;
+													if (fieldTypeName.length() > parsedClass.length()) {
+														if (fieldTypeName.find(suffixDot) != std::string::npos ||
+														    fieldTypeName.find(suffixAngle) != std::string::npos) {
+															isMatch = true;
+														}
+													}
+												}
+												
+												if (isMatch) {
+															// 找到引用
+															const char* refNs = il2cpp_class_get_namespace(klass);
+															const char* refName = il2cpp_class_get_name(klass);
+															if (refName) {
+																std::string refFullName;
+																if (refNs && strlen(refNs) > 0) {
+																	refFullName = std::string(refNs) + "." + std::string(refName);
+																} else {
+																	refFullName = std::string(refName);
+																}
+																// 避免重复添加
+																bool alreadyExists = false;
+																for (const auto& existing : refClasses) {
+																	if (existing == refFullName) {
+																		alreadyExists = true;
+																		break;
+																	}
+																}
+																if (!alreadyExists) {
+																	refClasses.push_back(refFullName);
+																}
+															}
+														}
+													}
+												}
+											}
+										}
+										searching_refs = false;
+										refs_searched = true;
+									}
+									
+									ImGui::PopStyleVar(2);
+
+									// 如果已经解析过，显示结果
+									if (parsed) {
+										ImGui::Separator();
+										ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "=== 解析结果 ===");
+										
+										// 使用滚动区域 - 自适应大小
+										float contentHeight = ImGui::GetContentRegionAvail().y;
+										if (contentHeight < 200) contentHeight = 200;
+										if (contentHeight > 600) contentHeight = 600;
+										
+										ImGui::BeginChild("ParseResult", ImVec2(600, contentHeight), true);
+										
+										// 查找程序集
+										const Il2CppAssembly* assembly = nullptr;
+										Il2CppDomain* domain = il2cpp_domain_get();
+										if (domain) {
+											assembly = il2cpp_domain_assembly_open(domain, parsedAssembly.c_str());
+										}
+
+										if (assembly) {
+											globalmanagement::DisplayInstanceStructure(const_cast<Il2CppAssembly*>(assembly), parsedNamespace, parsedClass, parsedAddr, 0);
+										}
+										ImGui::EndChild();
+										
+										// 显示帮助信息
+										ImGui::Separator();
+										ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), 
+											"提示: 点击树形节点可以展开/折叠嵌套对象");
+									}
+									ImGui::End();
+								}
+								
+								// 查找引用结果窗口
+								if (show_find_refs) {
+									if (ImGui::Begin("查找引用结果", &show_find_refs, ImGuiWindowFlags_AlwaysAutoResize)) {
+										ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.9f, 1.0f), "搜索引用: %s", parsedClass.c_str());
+										ImGui::Separator();
+										
+										if (searching_refs) {
+											ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "正在搜索...");
+										}
+										else if (refs_searched) {
+											ImGui::Text("找到 %zu 个类引用了该类:", refClasses.size());
+											ImGui::Separator();
+											
+											// 显示所有引用类
+											for (size_t i = 0; i < refClasses.size(); i++) {
+												const auto& refClass = refClasses[i];
+												char label[512];
+												sprintf_s(label, "##ref_%zu", i);
+												
+												// 解析命名空间和类名
+												size_t lastDot = refClass.find_last_of('.');
+												std::string refNs, refName;
+												if (lastDot != std::string::npos) {
+													refNs = refClass.substr(0, lastDot);
+													refName = refClass.substr(lastDot + 1);
+												} else {
+													refNs = "";
+													refName = refClass;
+												}
+												
+												char treeLabel[512];
+												sprintf_s(treeLabel, "%s (%zu)", refClass.c_str(), i + 1);
+												
+												if (ImGui::TreeNode(treeLabel)) {
+													ImGui::TextColored(ImVec4(0.6f, 0.8f, 0.6f, 1.0f), "类名: %s", refName.c_str());
+													if (!refNs.empty()) {
+														ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.8f, 1.0f), "命名空间: %s", refNs.c_str());
+													}
+													
+													// 显示该引用类的结构
+													ImGui::Separator();
+													ImGui::Text("类结构:");
+													
+													// 查找程序集并显示结构
+													Il2CppDomain* domain = il2cpp_domain_get();
+													if (domain) {
+														// 遍历所有程序集查找该类
+														size_t asmCount = 0;
+														const Il2CppAssembly** assemblies = il2cpp_domain_get_assemblies(domain, &asmCount);
+														
+														for (size_t a = 0; a < asmCount; a++) {
+															const Il2CppAssembly* asmPtr = assemblies[a];
+															if (!asmPtr) continue;
+															
+															const Il2CppImage* image = il2cpp_assembly_get_image(asmPtr);
+															if (!image) continue;
+															
+															// 尝试在该程序集中查找类
+															Il2CppClass* klass = il2cpp_class_from_name(image, refNs.empty() ? "" : refNs.c_str(), refName.c_str());
+															if (klass) {
+																// 找到类，显示其所有实例（这里需要用户输入地址，或者显示静态字段）
+																ImGui::TextColored(ImVec4(0.5f, 0.8f, 0.5f, 1.0f), "程序集: %s", il2cpp_image_get_name(image));
+																ImGui::Text("提示: 需要实例地址才能查看详细结构");
+																break;
+															}
+														}
+													}
+													
+													ImGui::TreePop();
+												}
+											}
+											
+											if (refClasses.empty()) {
+												ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "未找到引用该类的其他类");
+											}
+										}
+										
+										ImGui::Separator();
+										if (ImGui::Button("关闭")) {
+											show_find_refs = false;
+										}
+										ImGui::End();
+									}
+								}
+
+								// 大文件确认弹窗
+								if (ImGui::BeginPopupModal("大文件确认", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+									float pendingSizeMB = pending_dump_size / (1024.0f * 1024.0f);
+									ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "警告: 文件大小超过1GB!");
+									ImGui::Text("即将Dump的大小: %d MB (%d GB)", (int)pendingSizeMB, (int)(pendingSizeMB / 1024.0f));
+									ImGui::Text("这可能需要较长时间且占用大量磁盘空间。");
+									ImGui::Separator();
+									if (ImGui::Button("确认Dump", ImVec2(120, 0))) {
+										if (globalmanagement::DumpMetadataToFile(pending_metadata_addr, pending_dump_size, pending_save_path.c_str())) {
+											InfoMesseng::ColorPrint("SUCCESS", ("Dump saved to: " + pending_save_path).c_str(), 0);
+										}
+										else {
+											InfoMesseng::ColorPrint("ERROR", ("Failed to save dump to: " + pending_save_path).c_str(), 1);
+										}
+										ImGui::CloseCurrentPopup();
+									}
+									ImGui::SameLine();
+									if (ImGui::Button("取消", ImVec2(120, 0))) {
+										ImGui::CloseCurrentPopup();
+									}
+									ImGui::EndPopup();
 								}
 							}
 							ImGui::Separator();
@@ -1129,8 +1483,17 @@ namespace Hooks
 
 												// 调用 CalculateMetadataSize
 												int32_t size = globalmanagement::CalculateMetadataSize(header);
-												InfoMesseng::ColorPrint("SUCCESS", ("Metadata Size: " + to_string(size)).c_str(), 0);
-												if (globalmanagement::DumpMetadataToFile(metadataAddr, size, savePath.c_str())) {
+												float sizeMB = size / (1024.0f * 1024.0f);
+												InfoMesseng::ColorPrint("SUCCESS", ("Metadata Size: " + std::to_string(size) + " [" + std::to_string((int)sizeMB) + " MB]").c_str(), 0);
+
+												// 大于1GB时弹出确认框
+												if (sizeMB > 1000.0f) {
+													pending_dump_size = size;
+													pending_metadata_addr = metadataAddr;
+													pending_save_path = savePath;
+													ImGui::OpenPopup("大文件确认");
+												}
+												else if (globalmanagement::DumpMetadataToFile(metadataAddr, size, savePath.c_str())) {
 													InfoMesseng::ColorPrint("SUCCESS", ("Dump saved to: " + savePath).c_str(), 0);
 												}
 												else {
@@ -1145,8 +1508,17 @@ namespace Hooks
 											uintptr_t metadataAddr = std::stoull(addrStr, nullptr, 16);
 											Il2CppGlobalMetadataHeader* header = (Il2CppGlobalMetadataHeader*)metadataAddr;
 											int32_t size = globalmanagement::CalculateMetadataSize(header);
-											InfoMesseng::ColorPrint("SUCCESS", ("Metadata Size: " + std::to_string(size)).c_str(), 0);
-											if (globalmanagement::DumpMetadataToFile(metadataAddr, size, savePath.c_str())) {
+											float sizeMB = size / (1024.0f * 1024.0f);
+											InfoMesseng::ColorPrint("SUCCESS", ("Metadata Size: " + std::to_string(size) + " [" + std::to_string((int)sizeMB) + " MB]").c_str(), 0);
+
+											// 大于1GB时弹出确认框
+											if (sizeMB > 1000.0f) {
+												pending_dump_size = size;
+												pending_metadata_addr = metadataAddr;
+												pending_save_path = savePath;
+												ImGui::OpenPopup("大文件确认");
+											}
+											else if (globalmanagement::DumpMetadataToFile(metadataAddr, size, savePath.c_str())) {
 												InfoMesseng::ColorPrint("SUCCESS", ("Dump saved to: " + savePath).c_str(), 0);
 											}
 											else {
@@ -1285,7 +1657,7 @@ namespace Hooks
 											dump_sdk_result_path = savePath + "dump.cs";
 											dump_sdk_in_progress = false;
 											dump_sdk_complete = true;
-										}).detach();
+											}).detach();
 
 										ImGui::CloseCurrentPopup();
 									}
@@ -1565,7 +1937,7 @@ namespace Hooks
 
 					/* 选中的着色器索引（需要在两列之间共享） */
 					static int selectedShaderIndex = -1;
-					
+
 					/* -------- 第一列：着色器列表 -------- */
 					{
 						// 存储新出现的着色器名称（在刷新按钮中更新，在列表渲染中使用）
@@ -1658,10 +2030,15 @@ namespace Hooks
 								// 如果是新着色器，使用 Highlight 标志强制显示背景，并设置为选中状态以确保背景显示
 								if (ImGui::Selectable(label, isSelected || isNewShader, isNewShader ? ImGuiSelectableFlags_Highlight : ImGuiSelectableFlags_None)) {
 									selectedShaderIndex = originalIndex;
+									// 清空属性列表
+									globalshader::cachedProperties.clear();
+									globalshader::cachedSelectedShader = nullptr;
 									// 点击时调用 get_shader_by_name 获取属性
 									if (globalshader::get_shader_by_name(sortedShaderList[i])) {
 										currentShader = globalshader::temp_sle_Shader;
 										InfoMesseng::ColorPrint("SUCCESS", ("Loaded properties for shader: " + sortedShaderList[i]).c_str(), 0);
+										globalshader::GetShader();
+
 									}
 									else {
 										InfoMesseng::ColorPrint("ERROR", ("Failed to load properties for shader: " + sortedShaderList[i]).c_str(), 1);
@@ -1688,8 +2065,6 @@ namespace Hooks
 						}
 
 						ImGui::EndChild();
-
-						/* 按钮区域 - 在child外面 */
 						if (ImGui::Button("刷新着色器", ImVec2(-FLT_MIN, 0))) {
 							if (globalshader::init()) {
 								InfoMesseng::ColorPrint("SUCCESS", "globalshader refurbish Success!", 0);
@@ -1728,134 +2103,118 @@ namespace Hooks
 						// 显示当前选中着色器名称
 						if (selectedShaderIndex >= 0 && selectedShaderIndex < (int)shaderList.size()) {
 							ImGui::Text("当前着色器: %s", shaderList[selectedShaderIndex].c_str());
-						} else {
+						}
+						else {
 							ImGui::Text("当前着色器: 未选中");
 						}
 
+						// 获取属性列表
+						static int selectedPropertyIndex = -1;
+						std::vector<ShaderPropertyInfo> properties = globalshader::cachedProperties;
+
+						if (!properties.empty()) {
+							ImGui::Spacing();
+							ImGui::Separator();
+							ImGui::Spacing();
+
+							ImGui::Text("属性列表 :");
+
+							ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 4));
+							for (int i = 0; i < (int)properties.size(); ++i) {
+								float baseY = ImGui::GetCursorPosY();
+								const char* typeNames[] = { "Color", "Vector", "Float", "Range", "Texture", "Int" };
+								const char* typeName = (properties[i].type >= 0 && properties[i].type <= 5) ? typeNames[properties[i].type] : "Unknown";
+								float centerY = baseY + (ImGui::GetFrameHeight() - ImGui::GetTextLineHeight()) / 2;
+								ImGui::SetCursorPosY(centerY);
+								ImGui::TextColored(ImVec4(0.4f, 0.7f, 1.0f, 1.0f), "[%s]", typeName);
+								ImGui::SameLine();
+								ImGui::Text("%s:", properties[i].name.c_str());
+								ImGui::SameLine();
+
+								ImGui::PushID(i);
+								ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+								ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled]);
+
+								// 根据类型显示对应的只读控件
+								switch (properties[i].type) {
+								case ShaderType_Float:
+								case ShaderType_Range:
+								{
+									float val = properties[i].floatValue;
+									char buf[64];
+									sprintf_s(buf, sizeof(buf), "%.4f", val);
+									ImGui::InputText("##val", buf, sizeof(buf), ImGuiInputTextFlags_ReadOnly);
+									break;
+								}
+								case ShaderType_Int:
+								{
+									int val = properties[i].intValue;
+									char buf[64];
+									sprintf_s(buf, sizeof(buf), "%d", val);
+									ImGui::InputText("##val", buf, sizeof(buf), ImGuiInputTextFlags_ReadOnly);
+									break;
+								}
+								case ShaderType_Vector:
+								{
+									ImVec4 val(properties[i].vectorValue.x, properties[i].vectorValue.y,
+										properties[i].vectorValue.z, properties[i].vectorValue.w);
+									char buf[128];
+									sprintf_s(buf, sizeof(buf), "(%.4f, %.4f, %.4f, %.4f)", val.x, val.y, val.z, val.w);
+									ImGui::InputText("##val", buf, sizeof(buf), ImGuiInputTextFlags_ReadOnly);
+									break;
+								}
+								case ShaderType_Color:
+								{
+									ImVec4 val(properties[i].colorValue.r, properties[i].colorValue.g,
+										properties[i].colorValue.b, properties[i].colorValue.a);
+									ImGui::ColorEdit4("##val", (float*)&val, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
+									break;
+								}
+								case ShaderType_Texture:
+								{
+									ImGui::Text("%s", properties[i].textureValue.c_str());
+									break;
+								}
+								default:
+									ImGui::Text("Unknown");
+									break;
+								}
+
+								ImGui::PopStyleColor();
+								ImGui::PopItemFlag();
+								ImGui::PopID();
+
+								// 重置 Y 位置到基准线，确保下一行对齐
+								ImGui::SetCursorPosY(baseY + ImGui::GetFrameHeightWithSpacing());
+
+								if (i < (int)properties.size() - 1) {
+									ImGui::Spacing();
+								}
+							}
+							ImGui::PopStyleVar();
+						}
+						else {
+							ImGui::Spacing();
+							ImGui::Text("没有可用的属性");
+							ImGui::Text("请先选择一个着色器");
+						}
 
 						ImGui::Spacing();
 						ImGui::Separator();
 						ImGui::Spacing();
 
-						// CollapsingHeader：应用于全部着色器
-						if (ImGui::CollapsingHeader("设定全局")) {
-							// 第一行：属性名输入框
-							static char propertyName[256] = "";
-							ImGui::SetNextItemWidth(-FLT_MIN);
-							ImGui::InputTextWithHint("##propertyName", "输入属性名...", propertyName, sizeof(propertyName));
-
-							// 第二行：类型下拉框
-							const char* propertyTypes[] = {
-								"SetGlobalInt (Int32)",
-								"SetGlobalFloat (Single)",
-								"SetGlobalVector (Vector4)",
-								"SetGlobalColor (Color)",
-								"SetGlobalMatrix (Matrix4x4)",
-							};
-							static int selectedTypeIndex = 0;
-							ImGui::SetNextItemWidth(-FLT_MIN);
-							if (ImGui::BeginCombo("##propertyType", propertyTypes[selectedTypeIndex])) {
-								for (int i = 0; i < IM_ARRAYSIZE(propertyTypes); i++) {
-									bool isSelected = (selectedTypeIndex == i);
-									if (ImGui::Selectable(propertyTypes[i], isSelected)) {
-										selectedTypeIndex = i;
-									}
-									if (isSelected) {
-										ImGui::SetItemDefaultFocus();
-									}
-								}
-								ImGui::EndCombo();
+						ImGui::Text("全局操作:");
+						static bool temp_bool = false;
+						ImGui::Checkbox("开启修改", &temp_bool);
+						if (temp_bool) {
+							static int temp_int = 0;
+							if (ImGui::DragInt("设定画质等级##batchInt", &temp_int, 1)) {
+								::SetGlobalMaximumLOD(temp_int);
 							}
-
-							ImGui::Spacing();
-
-							// 值变量（需要在 switch 外定义，以便批量操作按钮可以访问）
-							static bool temp_bool;
-							static int intValue = 0;
-							static float floatValue = 0.0f;
-							static ImVec4 vectorValue = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
-							static ImVec4 colorValue = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-							static Matrix4x4 matrixValue;
-
-							// 第三行：根据选择的类型显示对应的控件
-							switch (selectedTypeIndex) {
-							case 0: // SetGlobalInt (Int32)
-							{
-								ImGui::SetNextItemWidth(-FLT_MIN);
-								if (ImGui::DragInt("值##intValue", &intValue, 1)) {
-									Shader::SetGlobalInt(propertyName, intValue);
-								}
-								break;
-							}
-							case 1: // SetGlobalFloat (Single)
-							{
-								ImGui::SetNextItemWidth(-FLT_MIN);
-								if (ImGui::DragFloat("值##floatValue", &floatValue, 0.01f)) {
-									Shader::SetGlobalFloat(propertyName, floatValue);
-								}
-								break;
-							}
-							case 2: // SetGlobalVector (Vector4)
-							{
-								ImGui::SetNextItemWidth(-FLT_MIN);
-								if (ImGui::DragFloat4("值##vectorValue", (float*)&vectorValue, 0.01f)) {
-									Vector4 vec4Value;
-									vec4Value.x = vectorValue.x;
-									vec4Value.y = vectorValue.y;
-									vec4Value.z = vectorValue.z;
-									vec4Value.w = vectorValue.w;
-									Shader::SetGlobalVector(propertyName, vec4Value);
-								}
-								break;
-							}
-							case 3: // SetGlobalColor (Color)
-							{
-								if (ImGui::ColorEdit4("值##colorValue", (float*)&colorValue)) {
-									Color colorValues;
-									colorValues.r = colorValue.x;
-									colorValues.g = colorValue.y;
-									colorValues.b = colorValue.z;
-									colorValues.a = colorValue.w;
-									Shader::SetGlobalColor(propertyName, colorValues);
-								}
-								break;
-							}
-							case 4: // SetGlobalMatrix (Matrix4x4)
-							{
-								ImGui::Text("矩阵值 (4x4):");
-								bool matrixChanged = false;
-								for (int row = 0; row < 4; row++) {
-									char label[32];
-									sprintf_s(label, "##matrix_%d", row);
-									ImGui::SetNextItemWidth(-FLT_MIN);
-									if (ImGui::DragFloat4(label, &matrixValue(row, 0), 0.01f)) {
-										matrixChanged = true;
-									}
-								}
-								if (matrixChanged) {
-									Shader::SetGlobalMatrix(propertyName, matrixValue);
-								}
-								break;
-							}
-							}
-
-							ImGui::Spacing();
-							ImGui::Separator();
-							ImGui::Spacing();
-
-							ImGui::Text("全局操作:");
-							ImGui::Checkbox("开启修改", &temp_bool);
-							if (temp_bool) {
-								static int temp_int = 0;
-								if (ImGui::DragInt("设定画质等级##batchInt", &temp_int, 1)) {
-									::SetGlobalMaximumLOD(temp_int);
-								}
-							}
-
-							ImGui::Spacing();
-							ImGui::Separator();
-							ImGui::Spacing();
 						}
+						ImGui::Spacing();
+						ImGui::Separator();
+						ImGui::Spacing();
 
 						ImGui::EndChild();
 					}
