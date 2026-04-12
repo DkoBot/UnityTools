@@ -93,8 +93,6 @@ Component* GameObject::GetComponentInChildren(string Type) {
 	// 先在当前GameObject上查找组件
 	Component* result = GetComponent(Type);
 	if (result) return result;
-	
-	// 获取Transform以遍历子对象
 	Transform* transform = GetTransform();
 	if (!transform) return NULL;
 	
@@ -119,29 +117,107 @@ void GameObject::SetActive(bool offoron) {
 	::SetActive(this, offoron);
 }
 
-void Shader::SetGlobalColor(string name, Color value) {
-	Il2CppString* nameStr = create_il2cpp_string(wstring(name.begin(), name.end()).c_str());
-	::SetGlobalColor(nameStr, value);
+void Shader::SetGlobalColor(Il2CppString* name,Color value) {
+
+	::SetGlobalColor(this, name, value);
 }
-void Shader::SetGlobalInt(string name, INT32 value) {
-	Il2CppString* nameStr = create_il2cpp_string(wstring(name.begin(), name.end()).c_str());
-	::SetGlobalInt(nameStr, value);
+int Shader::GetPropertyCount() {
+	return ::GetShaderPropertyCount(this);
 }
-void Shader::SetGlobalFloat(string name, float value) {
-	Il2CppString* nameStr = create_il2cpp_string(wstring(name.begin(), name.end()).c_str());
-	::SetGlobalFloat(nameStr, value);
+ShaderPropertyType Shader::GetPropertyType(int index) {
+	return ::GetShaderPropertyType(this, index);
 }
-void Shader::SetGlobalVector(string name, Vector4 value) {
-	Il2CppString* nameStr = create_il2cpp_string(wstring(name.begin(), name.end()).c_str());
-	::SetGlobalVector(nameStr, value);
+Il2CppString* Shader::GetPropertyDescription(int index) {
+	return ::GetShaderPropertyDescription(this, index);
 }
-void Shader::SetGlobalMatrix(string name, Matrix4x4 value) {
-	Il2CppString* nameStr = create_il2cpp_string(wstring(name.begin(), name.end()).c_str());
-	::SetGlobalMatrix(nameStr, value);
+Il2CppString* Shader::GetPropertyName(int index) {
+	return ::GetShaderPropertyName(this, index);
+}
+void Shader::SetGlobalInt(Il2CppString* name,INT32 value) {
+
+	::SetGlobalInt(this, name, value);
+}
+void Shader::SetGlobalFloat(Il2CppString* name,float value) {
+
+	::SetGlobalFloat(this, name, value);
+}
+void Shader::SetGlobalVector(Il2CppString* name,Vector4 value) {
+
+	::SetGlobalVector(this, name, value);
+}
+float Shader::GetFloat(int propertyIndex){
+
+	return ::GetPropertyDefaultFloatValue(this, propertyIndex);
+}
+int Shader::GetInt(int propertyIndex) {
+	return ::GetPropertyDefaultIntValue(this, propertyIndex);
+}
+string Shader::GetTexture(int propertyIndex) {
+	Il2CppString* il2cppStr = ::GetPropertyTextureDefaultName(this, propertyIndex);
+	if (il2cppStr) {
+		return Engine::il2cppStringToStdString(il2cppStr);
+	}
+}
+TextureDimension Shader::GetTextureDimension(int propertyIndex) {
+	return ::GetPropertyTextureDimension(this, propertyIndex);
+}
+Vector4 Shader::GetVector(int propertyIndex){
+
+	return ::GetPropertyDefaultVectorValue(this, propertyIndex);
+}
+Color Shader::GetColor(int propertyIndex){
+	Vector4 vec = ::GetPropertyDefaultVectorValue(this, propertyIndex);
+	Color color = { 0,0,0,0 };
+	color.a = vec.w;
+	color.r = vec.x;
+	color.g = vec.y;
+	color.b = vec.z;
+	return color;
+}
+void Shader::SetGlobalMatrix(Il2CppString* name, Matrix4x4 value) {
+
+	::SetGlobalMatrix(this, name, value);
 }
 void Shader::set_maximumLOD(INT32 value) {
 	::SetMaximumLOD(this, value);
 }
 int Shader::get_passCount() {
 	return ::GetPassCount(this);
+}
+
+Il2CppArray* Material::GetPropertyNames(MaterialPropertyType type) {
+	return ::Get_PropertyNames(this, type);
+}
+Color Material::get_color(Il2CppString* name) {
+	return ::Getcolor_Material(this, name);
+}
+void Material::SetColor(Il2CppString* name, Color* value) {
+	::Setcolor_Material(this, name, value);
+}
+void Material::SetFloat(Il2CppString* name, float value) {
+	::SetFloat_Material(this, name, value);
+}
+void Material::SetInt(Il2CppString* name, int value) {
+	::SetInt_Material(this, name, value);
+}
+void Material::SetVector(Il2CppString* name, Vector4 value) {
+	::SetVector_Material(this, name, value);
+}
+Il2CppArray* Material::GetShaderKeywords() {
+	return ::Get_ShaderKeywords(this);
+}
+Il2CppArray* Material::GetTexturePropertyNames() {
+	return ::Get_TexturePropertyNames(this);
+}
+int Material::GetInt(Il2CppString* name) {
+	return ::GetInt_Material(this, name);
+}
+float Material::GetFloat(Il2CppString* name) {
+	return ::GetFloat_Material(this, name);
+}
+Texture* Material::GetTexture(Il2CppString* name) {
+	return ::GetTexture_Material(this, name);
+}
+Vector4 Material::GetVector(Il2CppString* name) {
+	return ::GetVector_Material(this, name);
 }

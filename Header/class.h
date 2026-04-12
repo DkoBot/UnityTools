@@ -64,6 +64,7 @@ class Vector4 {
 	Vector4() {
 		RtlZeroMemory(this, sizeof(Vector4));
 	}
+	Vector4(float _x, float _y, float _z, float _w) : x(_x), y(_y), z(_z), w(_w) {}
 };
 class Matrix4x4 {
 public:
@@ -120,6 +121,7 @@ struct Il2CppObject {          // 所有托管对象头
 struct Il2CppString : Il2CppObject {
 	int32_t length;
 	wchar_t chars[1];          // 柔性数组
+
 };
 struct Il2CppArray : Il2CppObject {
 	void* bounds;
@@ -186,6 +188,33 @@ public:
 	Component* GetComponentInChildren(string Type);
 	void SetActive(bool offoron);
 };
+enum ShaderPropertyType // TypeDefIndex: 17561
+{
+	ShaderType_Color = 0,
+	ShaderType_Vector = 1,
+	ShaderType_Float = 2,
+	ShaderType_Range = 3,
+	ShaderType_Texture = 4,
+	ShaderType_Int = 5,
+};
+class Single {
+public:
+	float value;
+};
+class Texture {
+public:
+};
+enum TextureDimension // TypeDefIndex: 17504
+{
+	TextureDimension_Unknown = -1,
+	TextureDimension_None = 0,
+	TextureDimension_Any = 1,
+	TextureDimension_Tex2D = 2,
+	TextureDimension_Tex3D = 3,
+	TextureDimension_Cube = 4,
+	TextureDimension_Tex2DArray = 5,
+	TextureDimension_CubeArray = 6,
+};
 class Shader {
 public:
 	/*
@@ -194,99 +223,54 @@ public:
 	chamsMaterial.SetInt("_ZTest", 8);
 	chamsMaterial.SetColor("_Color", curChamsColour);
 	*/
+	int GetPropertyCount();
+	ShaderPropertyType GetPropertyType(int index);
+	Il2CppString* GetPropertyDescription(int index);
+	Il2CppString* GetPropertyName(int index);
 
-	static void SetGlobalColor(string name, Color value);
-	static void SetGlobalInt(string name, INT32 value);
-	static void SetGlobalFloat(string name, float value);
-	static void SetGlobalVector(string name, Vector4 value);
-	static void SetGlobalMatrix(string name, Matrix4x4 value);
+	// 设置方法
+	void SetGlobalColor(Il2CppString* name, Color value);
+	void SetGlobalInt(Il2CppString* name, INT32 value);
+	void SetGlobalFloat(Il2CppString* name, float value);
+	void SetGlobalVector(Il2CppString* name, Vector4 value);
+	void SetGlobalMatrix(Il2CppString* name, Matrix4x4 value);
+	
+	// 获取方法
+	float GetFloat(int propertyIndex);
+	int GetInt(int propertyIndex);
+	Vector4 GetVector(int propertyIndex);
+	Color GetColor(int propertyIndex);
+	TextureDimension GetTextureDimension(int propertyIndex);
+	string GetTexture(int propertyIndex);
+	// 其他方法
 	void set_maximumLOD(INT32 value);
 	int get_passCount();
 
+
 };
+enum MaterialPropertyType // TypeDefIndex: 17181
+{
+	MaterialPropertyType_Float = 0,
+	MaterialPropertyType_Int = 1,
+	MaterialPropertyType_Vector = 2,
+	MaterialPropertyType_Matrix = 3,
+	MaterialPropertyType_Texture = 4,
+	MaterialPropertyType_ConstantBuffer = 5,
+	MaterialPropertyType_ComputeBuffer = 6,
+};
+
 class Material {
 public:
-	// No fields found
-
-	// Methods
-	void CreateWithShader(Material self, Shader shader);
-	void CreateWithMaterial(Material self, Material source);
-	void CreateWithString(Material self);
-	Shader get_shader();
-	void set_shader(Shader value);
-	Color get_color();
-	void set_color(Color value);
-	Vector2 get_mainTextureOffset();
-	void set_mainTextureOffset(Vector2 value);
-	Vector2 get_mainTextureScale();
-	void set_mainTextureScale(Vector2 value);
-	bool HasProperty(int nameID);
-	bool HasProperty(Il2CppString* name);
-	bool HasIntImpl(int name);
-	bool HasInteger(int nameID);
-	bool HasVectorImpl(int name);
-	bool HasVector(int nameID);
-	bool HasColor(int nameID);
-	int get_renderQueue();
-	void set_renderQueue(int value);
-	int get_rawRenderQueue();
-	void EnableKeyword(Il2CppString* keyword);
-	void DisableKeyword(Il2CppString* keyword);
-	bool IsKeywordEnabled(Il2CppString* keyword);
-	bool get_enableInstancing();
-	void set_enableInstancing(bool value);
-	int get_passCount();
-	void SetShaderPassEnabled(Il2CppString* passName, bool enabled);
-	int FindPass(Il2CppString* passName);
-	void SetOverrideTag(Il2CppString* tag, Il2CppString* val);
-	Il2CppString* GetTagImpl(Il2CppString* tag, bool currentSubShaderOnly, Il2CppString* defaultValue);
-	Il2CppString* GetTag(Il2CppString* tag, bool searchFallbacks);
-	void Lerp(Material start, Material end, float t);
-	bool SetPass(int pass);
-	void CopyPropertiesFromMaterial(Material mat);
-	void CopyMatchingPropertiesFromMaterial(Material mat);
-	int ComputeCRC();
-	void SetIntImpl(int name, int value);
-	void SetFloatImpl(int name, float value);
-	void SetColorImpl(int name, Color value);
-	void SetMatrixImpl(int name, Matrix4x4 value);
-	float GetFloatImpl(int name);
-	Color GetColorImpl(int name);
-	Matrix4x4 GetMatrixImpl(int name);
-	int GetFloatArrayCountImpl(int name);
-	int GetVectorArrayCountImpl(int name);
-	int GetColorArrayCountImpl(int name);
-	void SetTextureOffsetImpl(int name, Vector2 offset);
-	void SetTextureScaleImpl(int name, Vector2 scale);
+	void SetColor(Il2CppString* name, Color* value);
+	Color get_color(Il2CppString* name);
 	void SetInt(Il2CppString* name, int value);
-	void SetInt(int nameID, int value);
+	int GetInt(Il2CppString* name);
 	void SetFloat(Il2CppString* name, float value);
-	void SetFloat(int nameID, float value);
-	void SetInteger(int nameID, int value);
-	void SetColor(Il2CppString* name, Color value);
-	void SetColor(int nameID, Color value);
-	void SetMatrix(Il2CppString* name, Matrix4x4 value);
-	void SetMatrix(int nameID, Matrix4x4 value);
-	int GetInt(int nameID);
 	float GetFloat(Il2CppString* name);
-	float GetFloat(int nameID);
-	Color GetColor(Il2CppString* name);
-	Color GetColor(int nameID);
-	Matrix4x4 GetMatrix(Il2CppString* name);
-	void SetTextureOffset(Il2CppString* name, Vector2 value);
-	void SetTextureOffset(int nameID, Vector2 value);
-	void SetTextureScale(Il2CppString* name, Vector2 value);
-	void SetTextureScale(int nameID, Vector2 value);
-	Vector2 GetTextureOffset(Il2CppString* name);
-	Vector2 GetTextureOffset(int nameID);
-	Vector2 GetTextureScale(Il2CppString* name);
-	Vector2 GetTextureScale(int nameID);
-	void SetColorImpl_Injected(int name, Color& value);
-	void SetMatrixImpl_Injected(int name, Matrix4x4& value);
-	void GetColorImpl_Injected(int name, Color& ret);
-	void GetMatrixImpl_Injected(int name, Matrix4x4& ret);
-	void GetTextureScaleAndOffsetImpl_Injected(int name, Vector4& ret);
-	void SetTextureOffsetImpl_Injected(int name,Vector2& offset);
-	void SetTextureScaleImpl_Injected(int name, Vector2& scale);
+	Texture* GetTexture(Il2CppString* name);
+	void SetVector(Il2CppString* name, Vector4 value);
+	Vector4 GetVector(Il2CppString* name);
+	Il2CppArray* GetShaderKeywords();
 	Il2CppArray* GetTexturePropertyNames();
+	Il2CppArray* GetPropertyNames(MaterialPropertyType type);
 };

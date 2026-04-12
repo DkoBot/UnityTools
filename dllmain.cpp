@@ -9,7 +9,7 @@ void MainThread() {
     freopen("CONOUT$", "w", stdout);
     Config::CreateConfig("Cofig1.ini");
     Engine::initialize();
-    Hooks::initialize(kiero::RenderType::Auto);
+    Hooks::initialize(kiero::RenderType::D3D11);
     cout << "init successfully!" << endl;
     cout << "GitHub Link: https://github.com/DkoBot/UnityTools" << endl;
 

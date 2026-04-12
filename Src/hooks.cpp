@@ -44,6 +44,7 @@ namespace Hooks
 	static bool show_memory_scanner = false;
 	static bool show_memory_drawer = false;
 	static bool show_shader_drawer = false;
+	static bool show_material_drawer = false;
 	static bool show_theme_settings = false;
 	static bool show_config_window = false;
 
@@ -52,6 +53,7 @@ namespace Hooks
 	static bool orig_show_memory_scanner = false;
 	static bool orig_show_memory_drawer = false;
 	static bool orig_show_shader_drawer = false;
+	static bool orig_show_material_drawer = false;
 	static bool orig_show_theme_settings = false;
 	static bool orig_show_config_window = false;
 
@@ -60,6 +62,7 @@ namespace Hooks
 	static bool focus_memory_scanner = false;
 	static bool focus_memory_drawer = false;
 	static bool focus_shader_drawer = false;
+	static bool focus_material_drawer = false;
 	static bool focus_theme_settings = false;
 	static bool focus_config_window = false;
 
@@ -258,6 +261,7 @@ namespace Hooks
 						orig_show_memory_scanner = show_memory_scanner;
 						orig_show_memory_drawer = show_memory_drawer;
 						orig_show_shader_drawer = show_shader_drawer;
+						orig_show_material_drawer = show_material_drawer;
 						orig_show_theme_settings = show_theme_settings;
 						orig_show_config_window = show_config_window;
 						// 隐藏所有窗口
@@ -265,6 +269,7 @@ namespace Hooks
 						show_memory_scanner = false;
 						show_memory_drawer = false;
 						show_shader_drawer = false;
+						show_material_drawer = false;
 						show_theme_settings = false;
 						show_config_window = false;
 					}
@@ -274,6 +279,7 @@ namespace Hooks
 						show_memory_scanner = orig_show_memory_scanner;
 						show_memory_drawer = orig_show_memory_drawer;
 						show_shader_drawer = orig_show_shader_drawer;
+						show_material_drawer = orig_show_material_drawer;
 						show_theme_settings = orig_show_theme_settings;
 						show_config_window = orig_show_config_window;
 					}
@@ -328,9 +334,13 @@ namespace Hooks
 					show_memory_drawer = true;
 					focus_memory_drawer = true;
 				}
-				if (ImGui::MenuItem("着色器绘制")) {
+				if (ImGui::MenuItem("着色器管理器")) {
 					show_shader_drawer = true;
 					focus_shader_drawer = true;
+				}
+				if (ImGui::MenuItem("材质管理器")) {
+					show_material_drawer = true;
+					focus_material_drawer = true;
 				}
 				if (ImGui::MenuItem("主题")) {
 					show_theme_settings = true;
@@ -980,6 +990,7 @@ namespace Hooks
 											if (ok && vi < varValueStrings.size()) varValueStrings[vi] = valueEditBuf;
 											editingVarIndex = -1;
 										}
+
 									}
 									else {
 										ImGui::Text("%s", valueDisplay);
@@ -1542,7 +1553,7 @@ namespace Hooks
 												break;
 											if (*(unsigned char*)check == 0x48 && *(unsigned char*)(check + 1) == 0x8B && *(unsigned char*)(check + 2) == 0x05) {
 												// 计算 RVA 差值验证
-												int diff = addrs[0] - check;
+												size_t diff = addrs[0] - check;
 												uintptr_t val = MemoryOperation::ReadRipRelativeValue(check);
 												if (val != 0 && val <= 0x7FFE00000000) {
 													OutPutaddrs.push_back(val);
@@ -1766,7 +1777,7 @@ namespace Hooks
 								auto it = find(addressList.begin(), addressList.end(), newAddress);
 								if (it != addressList.end()) {
 									// 如果存在，选中它
-									selectedAddressIndex = distance(addressList.begin(), it);
+									selectedAddressIndex = static_cast<int>(distance(addressList.begin(), it));
 								}
 								else {
 									// 如果不存在，添加它并选中
@@ -1891,7 +1902,7 @@ namespace Hooks
 					ImGui::PopFont();
 				}
 
-				// 着色器绘制窗口
+				// 着色器管理器窗口
 				if (show_shader_drawer) {
 					static bool is_first_open = false;
 					static vector<string> shaderList = { };
@@ -1925,7 +1936,7 @@ namespace Hooks
 					/* 关键：最小宽度 600（着色器需要更多空间）*/
 					ImGui::SetNextWindowSizeConstraints(ImVec2(600, 400), ImVec2(FLT_MAX, FLT_MAX));
 
-					ImGui::Begin("着色器绘制", &show_shader_drawer);
+					ImGui::Begin("着色器管理器", &show_shader_drawer);
 
 					// 计算列高，留出按钮区域的空间
 					float availableHeight = ImGui::GetContentRegionAvail().y;
@@ -2222,6 +2233,348 @@ namespace Hooks
 					ImGui::Columns(1);
 					ImGui::End();
 					ImGui::PopStyleVar(6);
+					ImGui::PopFont();
+				}
+
+				// 材料绘制窗口
+				if (show_material_drawer) {
+					if (focus_material_drawer) {
+						ImGui::SetNextWindowFocus();
+						focus_material_drawer = false;
+					}
+
+					ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 3));
+					ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(2, 2));
+					ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5);
+					ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3);
+					ImGui::PushFont(smallFont);
+
+					ImGui::SetNextWindowSizeConstraints(ImVec2(600, 400), ImVec2(FLT_MAX, FLT_MAX));
+
+					ImGui::Begin("材质管理器", &show_material_drawer);
+
+					// 首次打开时初始化
+					static bool material_init_done = false;
+					if (!material_init_done) {
+						globalmaterial::init();
+						material_init_done = true;
+					}
+
+					// 计算列高，留出按钮区域的空间
+					float availableHeight = ImGui::GetContentRegionAvail().y;
+					float buttonAreaHeight = ImGui::GetFrameHeightWithSpacing() + ImGui::GetStyle().ItemSpacing.y;
+					float unifiedHeight = availableHeight - buttonAreaHeight;
+
+					// 创建自适应两列布局
+					ImGui::Columns(2, "MaterialDrawerColumns", false);
+
+					// 用于追踪选中的材质名称（map 无法用索引，所以用名称）
+					static string selectedMaterialName = "";
+
+					// 第一列：材质列表
+					{
+						static vector<string> newMaterialNames;
+
+						ImGui::BeginChild("MDCol1", ImVec2(0, unifiedHeight), false);
+						ImGui::Text("材质列表");
+						ImGui::Separator();
+
+						// 搜索框
+						static char materialFilter[256] = "";
+						ImGui::SetNextItemWidth(-FLT_MIN);
+						ImGui::InputTextWithHint("##materialFilter", "搜索材质...", materialFilter, sizeof(materialFilter));
+
+						// 对列表进行排序和过滤
+						static vector<string> sortedMaterialList;
+						static string lastMaterialListHash = "";
+						static string lastMaterialFilter = "";
+
+						string currentHash = "";
+						for (const auto& kv : globalmaterial::materialNames) {
+							currentHash += kv.first;
+						}
+
+						if (currentHash != lastMaterialListHash || string(materialFilter) != lastMaterialFilter) {
+							sortedMaterialList.clear();
+							for (const auto& kv : globalmaterial::materialNames) {
+								const string& s = kv.first;
+								string lowerS = s;
+								string lowerFilter = materialFilter;
+								for (char& c : lowerS) c = (char)::tolower(c);
+								for (char& c : lowerFilter) c = (char)::tolower(c);
+
+								if (lowerFilter.empty() || lowerS.find(lowerFilter) != string::npos) {
+									sortedMaterialList.push_back(s);
+								}
+							}
+							std::sort(sortedMaterialList.begin(), sortedMaterialList.end(),
+								[](const string& a, const string& b) {
+									string lowerA = a, lowerB = b;
+									for (char& c : lowerA) c = (char)::tolower(c);
+									for (char& c : lowerB) c = (char)::tolower(c);
+									return lowerA < lowerB;
+								});
+							lastMaterialListHash = currentHash;
+							lastMaterialFilter = materialFilter;
+						}
+
+						ImGui::Spacing();
+						ImGui::SetNextItemWidth(-FLT_MIN);
+						if (ImGui::BeginListBox("##materialList", ImVec2(-FLT_MIN, -FLT_MIN))) {
+							for (int i = 0; i < (int)sortedMaterialList.size(); ++i) {
+								const string& itemName = sortedMaterialList[i];
+
+								bool isNewMaterial = false;
+								for (const auto& newName : newMaterialNames) {
+									if (itemName == newName) {
+										isNewMaterial = true;
+										break;
+									}
+								}
+								bool isSelected = (selectedMaterialName == itemName);
+
+								if (isNewMaterial) {
+									ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.4f, 0.6f, 0.9f, 0.7f));
+									ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.4f, 0.6f, 0.9f, 0.9f));
+									ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.3f, 0.5f, 0.8f, 1.0f));
+								}
+
+								char label[512];
+								sprintf_s(label, sizeof(label), "%s##material_%d", itemName.c_str(), i);
+								if (ImGui::Selectable(label, isSelected || isNewMaterial, isNewMaterial ? ImGuiSelectableFlags_Highlight : ImGuiSelectableFlags_None)) {
+									selectedMaterialName = itemName;
+									if (globalmaterial::get_material_by_name(itemName)) {
+
+										globalmaterial::cachedProperties = globalmaterial::GetMaterialProperties();
+										InfoMesseng::ColorPrint("SUCCESS", ("Loaded properties for material: " + sortedMaterialList[i]).c_str(), 0);
+									}
+									else {
+										InfoMesseng::ColorPrint("ERROR", ("Failed to load properties for material: " + sortedMaterialList[i]).c_str(), 1);
+									}
+								}
+								if (isNewMaterial && !isSelected) {
+									ImVec2 itemMin = ImGui::GetItemRectMin();
+									ImVec2 itemMax = ImGui::GetItemRectMax();
+									ImGui::GetWindowDrawList()->AddRectFilled(itemMin, itemMax, IM_COL32(102, 153, 230, 180), 0.0f);
+								}
+
+								if (isNewMaterial) {
+									ImGui::PopStyleColor(3);
+								}
+
+								if (isSelected) {
+									ImGui::SetItemDefaultFocus();
+								}
+							}
+							ImGui::EndListBox();
+						}
+
+						ImGui::EndChild();
+						if (ImGui::Button("刷新材质", ImVec2(-FLT_MIN, 0))) {
+							if (globalmaterial::init()) {
+								InfoMesseng::ColorPrint("SUCCESS", "Material refurbish Success!", 0);
+								newMaterialNames.clear();
+								for (const auto& kv : globalmaterial::materialNames) {
+									const string& name = kv.first;
+									bool isNew = true;
+									for (const auto& cachedKv : globalmaterial::cachedMaterialNames) {
+										if (name == cachedKv.first) {
+											isNew = false;
+											break;
+										}
+									}
+									if (isNew) {
+										newMaterialNames.push_back(name);
+									}
+								}
+							}
+							else {
+								InfoMesseng::ColorPrint("ERROR", "Material refurbish error!", 1);
+							}
+						}
+
+						ImGui::NextColumn();
+					}
+
+					// 第二列：材质属性
+					{
+						ImGui::BeginChild("MDCol2", ImVec2(0, unifiedHeight), false);
+						ImGui::Text("材质属性");
+						ImGui::Separator();
+
+						if (!selectedMaterialName.empty()) {
+							ImGui::Text("当前材质: %s", selectedMaterialName.c_str());
+						}
+						else {
+							ImGui::Text("当前材质: 未选中");
+						}
+
+						// 获取属性列表
+						static int selectedPropertyIndex = -1;
+						static string prevSelectedMaterial = "";  // 追踪上一个材质
+						std::vector<MaterialPropertyInfo> properties = globalmaterial::cachedProperties;
+						static bool vectorAsColor = false;
+
+						// 用于存储每个属性的编辑值（使用属性名称作为key，避免索引错乱）
+						static std::map<string, float> floatValues;
+						static std::map<string, int> intValues;
+						static std::map<string, ImVec4> vectorValues;
+						static std::map<string, ImVec4> colorValues;
+
+						// 材质切换时清理旧值
+						if (selectedMaterialName != prevSelectedMaterial) {
+							floatValues.clear();
+							intValues.clear();
+							vectorValues.clear();
+							colorValues.clear();
+							prevSelectedMaterial = selectedMaterialName;
+						}
+
+						// 初始化新属性值（使用属性名称作为key）
+						for (int i = 0; i < (int)properties.size(); ++i) {
+							string propKey = properties[i].name;
+							if (floatValues.find(propKey) == floatValues.end()) {
+								floatValues[propKey] = properties[i].floatValue;
+							}
+							if (intValues.find(propKey) == intValues.end()) {
+								intValues[propKey] = properties[i].intValue;
+							}
+							if (vectorValues.find(propKey) == vectorValues.end()) {
+								vectorValues[propKey] = ImVec4(properties[i].vectorValue.x, properties[i].vectorValue.y,
+									properties[i].vectorValue.z, properties[i].vectorValue.w);
+							}
+							if (colorValues.find(propKey) == colorValues.end()) {
+								colorValues[propKey] = ImVec4(properties[i].colorValue.r, properties[i].colorValue.g,
+									properties[i].colorValue.b, properties[i].colorValue.a);
+							}
+						}
+
+						if (!properties.empty()) {
+							ImGui::Spacing();
+							ImGui::Separator();
+							ImGui::Spacing();
+
+							ImGui::Text("属性列表 :");
+							ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 4));
+							for (int i = 0; i < (int)properties.size(); ++i) {
+								float baseY = ImGui::GetCursorPosY();
+								const char* typeNames[] = { "Color", "Vector", "Float", "Range", "Texture", "Int" };
+								const char* typeName = (properties[i].type >= 0 && properties[i].type <= 5) ? typeNames[properties[i].type] : "Unknown";
+								float centerY = baseY + (ImGui::GetFrameHeight() - ImGui::GetTextLineHeight()) / 2;
+								ImGui::SetCursorPosY(centerY);
+								ImGui::TextColored(ImVec4(0.4f, 0.7f, 1.0f, 1.0f), "[%s]", typeName);
+								ImGui::SameLine();
+								ImGui::Text("%s:", properties[i].name.c_str());
+								ImGui::SameLine();
+
+								ImGui::PushID(i);
+								ImGui::SetNextItemWidth(-FLT_MIN);
+
+								string propKey = properties[i].name;
+								switch (properties[i].type) {
+								case ShaderType_Float:
+								{
+									if (ImGui::DragFloat("##val", &floatValues[propKey], 0.01f)) {
+										if (globalmaterial::temp_material) {
+											Il2CppString* propName = Engine::create_il2cpp_string(
+												wstring(properties[i].name.begin(), properties[i].name.end()).c_str());
+											globalmaterial::temp_material->SetFloat(propName, floatValues[propKey]);
+										}
+									}
+									break;
+								}
+								case ShaderType_Int:
+								{
+									if (ImGui::DragInt("##val", &intValues[propKey], 1)) {
+										if (globalmaterial::temp_material) {
+											Il2CppString* propName = Engine::create_il2cpp_string(
+												wstring(properties[i].name.begin(), properties[i].name.end()).c_str());
+											globalmaterial::temp_material->SetInt(propName, intValues[propKey]);
+										}
+									}
+									break;
+								}
+
+								case ShaderType_Vector:
+								{
+									if (vectorAsColor) {
+										if (ImGui::ColorEdit4("##val", (float*)&vectorValues[propKey], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel)) {
+											if (globalmaterial::temp_material) {
+												Il2CppString* propName = Engine::create_il2cpp_string(
+													wstring(properties[i].name.begin(), properties[i].name.end()).c_str());
+												Color col(vectorValues[propKey].x, vectorValues[propKey].y, vectorValues[propKey].z, vectorValues[propKey].w);
+												globalmaterial::temp_material->SetColor(propName, &col);
+											}
+										}
+									}
+									else {
+										if (ImGui::InputFloat4("##val", (float*)&vectorValues[propKey], "%.3f")) {
+											if (globalmaterial::temp_material) {
+												Il2CppString* propName = Engine::create_il2cpp_string(
+													wstring(properties[i].name.begin(), properties[i].name.end()).c_str());
+												Vector4 vec(vectorValues[propKey].x, vectorValues[propKey].y, vectorValues[propKey].z, vectorValues[propKey].w);
+												globalmaterial::temp_material->SetVector(propName, vec);
+											}
+										}
+									}
+									break;
+								}
+								case ShaderType_Color:
+								{
+									string propKey = properties[i].name;
+									if (colorValues.find(propKey) == colorValues.end()) {
+										colorValues[propKey] = ImVec4(properties[i].colorValue.r, properties[i].colorValue.g,
+											properties[i].colorValue.b, properties[i].colorValue.a);
+									}
+									if (ImGui::ColorEdit4("##val", (float*)&colorValues[propKey], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel)) {
+										if (globalmaterial::temp_material) {
+											Il2CppString* propName = Engine::create_il2cpp_string(
+												wstring(properties[i].name.begin(), properties[i].name.end()).c_str());
+											Color col(colorValues[propKey].x, colorValues[propKey].y, colorValues[propKey].z, colorValues[propKey].w);
+											globalmaterial::temp_material->SetColor(propName, &col);
+										}
+									}
+									break;
+								}
+								case ShaderType_Texture:
+								{
+									ImGui::Text("%s", properties[i].textureValue.c_str());
+									break;
+								}
+								default:
+									ImGui::Text("Unknown");
+									break;
+								}
+
+								ImGui::PopID();
+								ImGui::SetCursorPosY(baseY + ImGui::GetFrameHeightWithSpacing());
+
+								if (i < (int)properties.size() - 1) {
+									ImGui::Spacing();
+								}
+							}
+							ImGui::PopStyleVar();
+						}
+						else {
+							ImGui::Spacing();
+							ImGui::Text("没有可用的属性");
+							ImGui::Text("请先选择一个材质");
+						}
+
+						ImGui::Spacing();
+						ImGui::Separator();
+						ImGui::Spacing();
+						ImGui::Text("配置:");
+						ImGui::Checkbox("Vector转Color##vectorAsColor", &vectorAsColor);
+
+						ImGui::EndChild();
+					}
+
+
+
+					ImGui::Columns(1);
+					ImGui::End();
+					ImGui::PopStyleVar(4);
 					ImGui::PopFont();
 				}
 

@@ -134,8 +134,12 @@ public:
 
 	// 搜索优化函数
 	static void update_class_search_results(const string& search_term, int filter_type = 0);
-
+    
     static int32_t CalculateMetadataSize(Il2CppGlobalMetadataHeader* header);
     static bool DumpMetadataToFile(uintptr_t metadataAddr, int32_t size, const char* filename);
+
+    // 结构分析器
+    static void DisplayInstanceStructure(Il2CppAssembly* assembly, const std::string& namespaceName, const std::string& className, uintptr_t instanceAddr, int depth = 0);
+
 };
 

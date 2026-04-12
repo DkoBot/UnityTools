@@ -3,6 +3,7 @@
 #include <cstring>
 #include <algorithm>
 #include <tuple>
+#pragma execution_character_set("utf-8")
 
 // 初始化assemblies变量
 vector<string> globalmanagement::assemblies;
@@ -519,6 +520,12 @@ vector<string> globalmanagement::get_Class_object(string Class, string Assemblie
 	size_t lastDotPos = string::npos;
 	string temp_selNamespace = "";
 	string temp_selClass = "";
+
+	// 处理 "None." 前缀的情况（没有命名空间时）
+	if (Class.rfind("None.", 0) == 0) {
+		Class = Class.substr(5); // 去掉 "None." 前缀
+	}
+
 	// 统计点号数量并记录最后一个点号位置
 	for (size_t i = 0; i < Class.length(); i++) {
 		if (Class[i] == '.') {
@@ -526,10 +533,15 @@ vector<string> globalmanagement::get_Class_object(string Class, string Assemblie
 			lastDotPos = i;
 		}
 	}
-	if (dotCount == 1) {
+	if (dotCount == 0) {
+		// 没有点号，整个就是类名
+		temp_selNamespace = "";
+		temp_selClass = Class;
+	}
+	else if (dotCount == 1) {
 		// 只有一个点号，说明这是全局类（格式：ClassName）
 		temp_selNamespace = "";
-		// g_selClass 已经是完整的类名
+		temp_selClass = Class;
 	}
 	else if (dotCount > 1 && lastDotPos != string::npos) {
 		// 有多个点号，通过最后一个点号分割
@@ -537,9 +549,9 @@ vector<string> globalmanagement::get_Class_object(string Class, string Assemblie
 		temp_selClass = Class.substr(lastDotPos + 1);    // 类名部分
 	}
 	else {
-		// 没有点号或异常情况
+		// 异常情况
 		temp_selNamespace = "";
-		// g_selClass 保持不变
+		temp_selClass = Class;
 	}
 	vector<string> objects = {};
 	try {
@@ -558,13 +570,13 @@ vector<string> globalmanagement::get_Class_object(string Class, string Assemblie
 					GameObject* go = (GameObject*)gameObject;
 					void* gameObjects = go->GetComponent(temp_selClass);
 					if (gameObjects) {
-					// 将指针地址转换为十六进制字符串（不带0x前缀）
-					char addressStr[32];
-					sprintf_s(addressStr, sizeof(addressStr), "%llx", (uintptr_t)gameObjects);
-					// 如果不是空指针（0000000000000000），才添加到列表中
-					if (strcmp(addressStr, "0000000000000000") != 0) {
-						objects.push_back(string(addressStr));
-					}
+						// 将指针地址转换为十六进制字符串（不带0x前缀）
+						char addressStr[32];
+						sprintf_s(addressStr, sizeof(addressStr), "%llx", (uintptr_t)gameObjects);
+						// 如果不是空指针（0000000000000000），才添加到列表中
+						if (strcmp(addressStr, "0000000000000000") != 0) {
+							objects.push_back(string(addressStr));
+						}
 					}
 				}
 			}
@@ -808,7 +820,7 @@ string globalmanagement::get_Class_Structure(string Class, string Assemblies) {
 	return result;
 }
 
-
+// Unity 2022.3.62f3c1 结构
 int32_t globalmanagement::CalculateMetadataSize(Il2CppGlobalMetadataHeader* header) {
 	int32_t maxOffset = 0;
 
@@ -898,4 +910,483 @@ bool globalmanagement::DumpMetadataToFile(uintptr_t metadataAddr, int32_t size, 
 
 	free(buffer);
 	return true;
+}
+
+// 判断类型是否为基本类型
+static bool IsPrimitiveType(const std::string& typeName) {
+	return typeName == "System.Int32" || typeName == "System.Int64" ||
+		typeName == "System.UInt32" || typeName == "System.UInt64" ||
+		typeName == "System.Int16" || typeName == "System.UInt16" ||
+		typeName == "System.Byte" || typeName == "System.SByte" ||
+		typeName == "System.Boolean" || typeName == "System.Single" ||
+		typeName == "System.Double" || typeName == "System.Char" ||
+		typeName == "int" || typeName == "long" ||
+		typeName == "uint" || typeName == "ulong" ||
+		typeName == "short" || typeName == "ushort" ||
+		typeName == "byte" || typeName == "bool" ||
+		typeName == "float" || typeName == "double" || typeName == "char";
+}
+
+// 判断类型是否为数组类型
+static bool IsArrayType(const std::string& typeName) {
+	return typeName.find("[]") != std::string::npos ||
+		typeName.find("System.Collections.Generic.List") != std::string::npos ||
+		typeName.find("List`1") != std::string::npos ||
+		typeName.find("System.Collections.Generic.IList") != std::string::npos;
+}
+
+// 判断类型是否为集合类型
+static bool IsCollectionType(const std::string& typeName) {
+	return IsArrayType(typeName) ||
+		typeName.find("System.Collections.Generic.IEnumerable") != std::string::npos ||
+		typeName.find("IEnumerable`1") != std::string::npos ||
+		typeName.find("ICollection") != std::string::npos ||
+		typeName.find(" ICollection`1") != std::string::npos;
+}
+
+// 判断类型是否为字典类型
+static bool IsDictionaryType(const std::string& typeName) {
+	return typeName.find("Dictionary") != std::string::npos ||
+		typeName.find("IDictionary") != std::string::npos ||
+		typeName.find("Dictionary`2") != std::string::npos;
+}
+
+// 判断类型是否为Unity类型
+static bool IsUnityType(const std::string& typeName) {
+	// 常见的Unity类型前缀
+	const char* unityPrefixes[] = {
+		"UnityEngine.",
+		"UnityEditor.",
+		"TMPro.",
+		"UnityEngine.UI.",
+		"UnityEngine.Event.",
+		"UnityEngine.SceneManagement.",
+		"UnityEngine.Animations.",
+		"UnityEngine.Rendering.",
+		"UnityEngine.Networking.",
+		"UnityEngine.Physics.",
+		"UnityEngine.AI.",
+		"UnityEngine.Audio.",
+		"UnityEngine.Video.",
+		"UnityEngine.TextCore.",
+		"UnityEngine.Localization.",
+		"Fishing.",
+		"Game."
+	};
+	for (const auto& prefix : unityPrefixes) {
+		if (typeName.find(prefix) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// 从类型名中提取简化的类名（去掉命名空间）
+static std::string GetSimplifiedClassName(const std::string& fullTypeName) {
+	size_t lastDot = fullTypeName.find_last_of('.');
+	if (lastDot != std::string::npos) {
+		return fullTypeName.substr(lastDot + 1);
+	}
+	// 处理泛型类型 like List`1
+	size_t genericPos = fullTypeName.find('`');
+	if (genericPos != std::string::npos) {
+		return fullTypeName.substr(0, genericPos);
+	}
+	return fullTypeName;
+}
+
+// 从类型名中提取命名空间
+static std::string GetNamespaceFromType(const std::string& fullTypeName) {
+	size_t lastDot = fullTypeName.find_last_of('.');
+	if (lastDot != std::string::npos) {
+		std::string possibleNs = fullTypeName.substr(0, lastDot);
+		// 排除泛型参数
+		if (possibleNs.find('`') == std::string::npos) {
+			return possibleNs;
+		}
+	}
+	return "";
+}
+
+// 读取基本类型的值
+static std::string ReadPrimitiveValue(uintptr_t addr, const std::string& typeName) {
+	if (addr == 0 || addr < 0x10000 || addr > 0x7FFFFFFFFFFF) return "null";
+
+	try {
+		if (typeName == "System.Int32" || typeName == "int") {
+			return std::to_string(*(int32_t*)addr);
+		}
+		else if (typeName == "System.Int64" || typeName == "long") {
+			return std::to_string(*(int64_t*)addr);
+		}
+		else if (typeName == "System.UInt32" || typeName == "uint") {
+			return std::to_string(*(uint32_t*)addr);
+		}
+		else if (typeName == "System.UInt64" || typeName == "ulong") {
+			return std::to_string(*(uint64_t*)addr);
+		}
+		else if (typeName == "System.Int16" || typeName == "short") {
+			return std::to_string(*(int16_t*)addr);
+		}
+		else if (typeName == "System.UInt16" || typeName == "ushort") {
+			return std::to_string(*(uint16_t*)addr);
+		}
+		else if (typeName == "System.Byte" || typeName == "byte") {
+			return std::to_string(*(uint8_t*)addr);
+		}
+		else if (typeName == "System.SByte") {
+			return std::to_string(*(int8_t*)addr);
+		}
+		else if (typeName == "System.Boolean" || typeName == "bool") {
+			return *(bool*)addr ? "true" : "false";
+		}
+		else if (typeName == "System.Single" || typeName == "float") {
+			return std::to_string(*(float*)addr);
+		}
+		else if (typeName == "System.Double" || typeName == "double") {
+			return std::to_string(*(double*)addr);
+		}
+		else if (typeName == "System.Char" || typeName == "char") {
+			char c = *(char*)addr;
+			std::string s(1, c);
+			return s;
+		}
+	}
+	catch (...) {
+		return "Error";
+	}
+	return "Unknown";
+}
+
+// 读取字符串值
+static std::string ReadStringValue(uintptr_t addr) {
+	if (addr == 0 || addr < 0x10000 || addr > 0x7FFFFFFFFFFF) return "null";
+	try {
+		// addr 已经是 Il2CppString* 的地址，直接使用即可
+		Il2CppString* str = (Il2CppString*)addr;
+		if (!str || !str->chars || str->length < 0 || str->length > 10000) return "null";
+		// 使用 Engine 的转换函数，完整支持 UTF-8
+		return Engine::il2cppStringToStdString(str);
+	}
+	catch (...) {
+		return "Error";
+	}
+}
+
+// 字段信息扩展结构
+struct FieldInfoEx {
+	int offset;
+	std::string typeName;
+	std::string fieldName;
+	uintptr_t fieldAddr;
+	bool isReference;
+	bool isString;
+	bool isArray;
+	bool isList;
+	bool isDictionary;
+	uintptr_t refAddr;
+};
+
+// 收集类的所有字段
+static std::vector<FieldInfoEx> CollectClassFields(Il2CppClass* klass, uintptr_t instanceAddr) {
+	std::vector<FieldInfoEx> fields;
+
+	void* fieldIter = nullptr;
+	FieldInfo* field = nullptr;
+	try {
+		while ((field = il2cpp_class_get_fields(klass, &fieldIter)) != nullptr) {
+			if (!field || !field->name) continue;
+
+			Il2CppType* fieldType = (Il2CppType*)field->type;
+			if (!fieldType) continue;
+
+			const char* typeName = il2cpp_type_get_name(fieldType);
+			if (!typeName) continue;
+
+			FieldInfoEx fie;
+			fie.typeName = typeName;
+			fie.fieldName = field->name;
+			fie.offset = il2cpp_field_get_offset(field);
+
+			// 跳过不合理的偏移
+			if (fie.offset < 0 || fie.offset > 0x10000) continue;
+
+			fie.fieldAddr = instanceAddr + fie.offset;
+
+			// 判断类型
+			fie.isString = (fie.typeName == "System.String" || fie.typeName == "String");
+			fie.isArray = IsArrayType(fie.typeName);
+			fie.isList = fie.typeName.find("List`1") != std::string::npos || 
+						 fie.typeName.find("System.Collections.Generic.List") != std::string::npos;
+			fie.isDictionary = IsDictionaryType(fie.typeName);
+
+			// 判断是否为引用类型
+			fie.isReference = !fie.isString && !IsPrimitiveType(fie.typeName) && !fie.isArray;
+
+			// 读取引用地址
+			fie.refAddr = 0;
+			if (fie.isReference && fie.fieldAddr >= 0x10000 && fie.fieldAddr <= 0x7FFFFFFFFFFF) {
+				try {
+					fie.refAddr = *(uintptr_t*)fie.fieldAddr;
+				}
+				catch (...) {
+					fie.refAddr = 0;
+				}
+			}
+
+			fields.push_back(fie);
+		}
+	}
+	catch (...) {
+		// 忽略错误
+	}
+
+	// 按偏移量排序
+	std::sort(fields.begin(), fields.end(), [](const FieldInfoEx& a, const FieldInfoEx& b) {
+		return a.offset < b.offset;
+	});
+
+	return fields;
+}
+
+// 显示单个字段
+static void DisplayField(Il2CppAssembly* assembly, const FieldInfoEx& fie, const std::string& currentNamespace, int depth) {
+	char offsetStr[16];
+	sprintf_s(offsetStr, "[0x%02X]", fie.offset);
+
+	// 根据不同类型显示
+	if (fie.isString) {
+		std::string strValue = ReadStringValue(fie.refAddr);
+		// 使用不同颜色显示字符串
+		ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "%s", offsetStr);
+		ImGui::SameLine();
+		ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "%s", fie.fieldName.c_str());
+		ImGui::SameLine();
+		ImGui::Text(": \"%s\"", strValue.c_str());
+	}
+	else if (fie.isArray || fie.isList) {
+		// 数组或List类型
+		char refAddrStr[32];
+		sprintf_s(refAddrStr, "0x%llX", (unsigned long long)fie.refAddr);
+		
+		ImGui::TextColored(ImVec4(0.5f, 0.5f, 1.0f, 1.0f), "%s", offsetStr);
+		ImGui::SameLine();
+		ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f), "%s", fie.typeName.c_str());
+		ImGui::SameLine();
+		ImGui::Text(" %s", fie.fieldName.c_str());
+		
+		if (fie.refAddr != 0) {
+			ImGui::SameLine();
+			ImGui::Text(" @ %s", refAddrStr);
+		}
+		else {
+			ImGui::SameLine();
+			ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), " (null)");
+		}
+	}
+	else if (fie.isReference) {
+		// 引用类型 - 使用TreeNode实现可展开的树形结构
+		char refAddrStr[32];
+		sprintf_s(refAddrStr, "0x%llX", (unsigned long long)fie.refAddr);
+		
+		if (fie.refAddr == 0) {
+			ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "%s", offsetStr);
+			ImGui::SameLine();
+			ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "%s", fie.typeName.c_str());
+			ImGui::SameLine();
+			ImGui::Text(" %s: null", fie.fieldName.c_str());
+		}
+		else {
+			// 构建树形节点标签
+			std::string simpleTypeName = GetSimplifiedClassName(fie.typeName);
+			std::string treeLabel = simpleTypeName + " " + fie.fieldName + "##" + refAddrStr;
+			
+			if (ImGui::TreeNode(treeLabel.c_str())) {
+				// 显示类型全名和地址
+				ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.9f, 1.0f), "类型: %s", fie.typeName.c_str());
+				ImGui::Text("地址: %s", refAddrStr);
+				ImGui::Separator();
+				
+				// 递归显示嵌套对象
+				if (fie.refAddr >= 0x10000 && fie.refAddr <= 0x7FFFFFFFFFFF) {
+					// 提取类名和命名空间
+					std::string nestedClassName = GetSimplifiedClassName(fie.typeName);
+					std::string nestedNs = GetNamespaceFromType(fie.typeName);
+					
+					// 如果命名空间为空，尝试使用当前命名空间
+					if (nestedNs.empty()) {
+						nestedNs = currentNamespace;
+					}
+					
+					// 递归调用显示嵌套结构
+					globalmanagement::DisplayInstanceStructure(assembly, nestedNs, nestedClassName, fie.refAddr, depth + 1);
+				}
+				ImGui::TreePop();
+			}
+		}
+	}
+	else if (IsPrimitiveType(fie.typeName)) {
+		// 基本类型 - 使用蓝色显示
+		std::string value = ReadPrimitiveValue(fie.fieldAddr, fie.typeName);
+		ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "%s", offsetStr);
+		ImGui::SameLine();
+		ImGui::TextColored(ImVec4(0.6f, 0.8f, 1.0f, 1.0f), "%s", fie.typeName.c_str());
+		ImGui::SameLine();
+		ImGui::Text(" %s: %s", fie.fieldName.c_str(), value.c_str());
+	}
+	else {
+		// 其他未知类型
+		char fieldAddrStr[32];
+		sprintf_s(fieldAddrStr, "0x%llX", (unsigned long long)fie.fieldAddr);
+		ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "%s", offsetStr);
+		ImGui::SameLine();
+		ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "%s", fie.typeName.c_str());
+		ImGui::SameLine();
+		ImGui::Text(" %s @ %s", fie.fieldName.c_str(), fieldAddrStr);
+	}
+}
+
+// 尝试通过多种方式查找类的辅助函数
+static Il2CppClass* TryFindClass(const Il2CppImage* image, const std::string& namespaceName, const std::string& className) {
+	if (!image) return nullptr;
+	
+	// 方法1: 直接使用提供的命名空间和类名查找
+	const char* nsStr = namespaceName.empty() ? "" : namespaceName.c_str();
+	Il2CppClass* klass = il2cpp_class_from_name(image, nsStr, className.c_str());
+	if (klass) return klass;
+	
+	// 方法2: 如果提供了命名空间，尝试用空命名空间查找
+	if (!namespaceName.empty()) {
+		klass = il2cpp_class_from_name(image, "", className.c_str());
+		if (klass) return klass;
+	}
+	
+	// 方法3: 遍历所有类进行匹配（适用于某些特殊情况）
+	size_t classCount = il2cpp_image_get_class_count(image);
+	for (size_t i = 0; i < classCount; i++) {
+		Il2CppClass* c = (Il2CppClass*)il2cpp_image_get_class(image, i);
+		if (!c) continue;
+		
+		const char* cname = il2cpp_class_get_name(c);
+		if (cname && strcmp(cname, className.c_str()) == 0) {
+			// 类名匹配，检查命名空间
+			const char* cns = il2cpp_class_get_namespace(c);
+			if (cns && namespaceName == cns) {
+				return c;
+			}
+			// 如果传入的namespace为空，但找到一个没有namespace的类
+			if (namespaceName.empty() && (!cns || strlen(cns) == 0)) {
+				return c;
+			}
+		}
+	}
+	
+	return nullptr;
+}
+
+void globalmanagement::DisplayInstanceStructure(Il2CppAssembly* assembly, const std::string& namespaceName, const std::string& className, uintptr_t instanceAddr, int depth) {
+	// 验证输入
+	if (className.empty()) {
+		ImGui::Text("[Error: Class name is empty]");
+		return;
+	}
+
+	// 验证assembly
+	if (!assembly) {
+		ImGui::Text("[Error: Assembly is null]");
+		return;
+	}
+
+	// 限制递归深度，防止无限递归
+	if (depth > 15) {
+		ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "[Max depth reached: %d]", depth);
+		return;
+	}
+
+	// 如果没有实例，显示none
+	if (instanceAddr == 0) {
+		ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "[null instance]");
+		return;
+	}
+
+	// 验证实例地址是否在合理范围内
+	if (instanceAddr < 0x10000 || instanceAddr > 0x7FFFFFFFFFFF) {
+		ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "[Invalid address: 0x%llX]", (unsigned long long)instanceAddr);
+		return;
+	}
+
+	// 获取类
+	Il2CppClass* klass = nullptr;
+	const Il2CppImage* image = il2cpp_assembly_get_image(assembly);
+	if (image) {
+		klass = TryFindClass(image, namespaceName, className);
+	}
+
+	if (!klass) {
+		// 显示更详细的错误信息
+		ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "[Class not found]");
+		ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "Namespace: \"%s\"", namespaceName.empty() ? "(empty)" : namespaceName.c_str());
+		ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "ClassName: \"%s\"", className.c_str());
+		return;
+	}
+
+	// 显示类名和实例地址
+	char addrStr[32];
+	sprintf_s(addrStr, "0x%llX", (unsigned long long)instanceAddr);
+	std::string displayClassName = className.empty() ? "Unknown" : className.c_str();
+
+	// 获取父类信息
+	const Il2CppClass* parentClass = il2cpp_class_get_parent(klass);
+	std::string parentInfo;
+	if (parentClass) {
+		const char* parentName = il2cpp_class_get_name(parentClass);
+		if (parentName) {
+			parentInfo = " -> " + std::string(parentName);
+		}
+	}
+
+	// 构建TreeNode标签
+	std::string treeLabel;
+	if (depth == 0) {
+		treeLabel = displayClassName + parentInfo + " ##root";
+	}
+	else {
+		treeLabel = displayClassName + " ##" + std::string(addrStr);
+	}
+
+	// 使用不同颜色显示根节点
+	if (ImGui::TreeNode(treeLabel.c_str())) {
+		// 显示类信息
+		if (depth > 0) {
+			ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "地址: %s", addrStr);
+		}
+		
+		// 显示命名空间
+		const char* ns = il2cpp_class_get_namespace(klass);
+		if (ns && strlen(ns) > 0) {
+			ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.8f, 1.0f), "命名空间: %s", ns);
+		}
+		
+		// 显示程序集
+		const char* assemblyName = il2cpp_image_get_name(image);
+		if (assemblyName) {
+			ImGui::TextColored(ImVec4(0.6f, 0.8f, 0.6f, 1.0f), "程序集: %s", assemblyName);
+		}
+		
+		ImGui::Separator();
+
+		// 收集所有字段
+		std::vector<FieldInfoEx> fields = CollectClassFields(klass, instanceAddr);
+
+		// 显示字段数量
+		ImGui::TextColored(ImVec4(0.9f, 0.9f, 0.9f, 1.0f), "字段数量: %zu", fields.size());
+		ImGui::Separator();
+
+		// 显示所有字段
+		for (const auto& fie : fields) {
+			DisplayField(assembly, fie, namespaceName, depth);
+		}
+
+		ImGui::TreePop();
+	}
 }

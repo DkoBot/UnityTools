@@ -67,4 +67,19 @@ namespace Engine {
 	void* GetMethod(string AssemblyName, string Namespaze, string ClassName, string Func);
 	void* GetMethodByName(string AssemblyName, string Namespaze, string ClassName, string MethodName, int paramCount);
 	Il2CppString* create_il2cpp_string(const wchar_t* src);
+	inline string il2CppStringToUtf8(Il2CppString* src)
+	{
+		if (!src || !src->length) return {};
+
+		// 1. 拿到 UTF-16 缓冲区
+		const wchar_t* utf16 = reinterpret_cast<const wchar_t*>(src->chars);
+
+		// 2. UTF-16 → UTF-8
+		int utf8Len = WideCharToMultiByte(CP_UTF8, 0, utf16, src->length,
+			nullptr, 0, nullptr, nullptr);
+		std::string utf8(utf8Len, 0);
+		WideCharToMultiByte(CP_UTF8, 0, utf16, src->length,
+			&utf8[0], utf8Len, nullptr, nullptr);
+		return utf8;
+	}
 }

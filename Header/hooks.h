@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "../Menu/globalmanagement.h"
 #include "../Menu/globalshader.h"
+#include "../Menu/globalmaterial.h"
 #include "../Misc/ColorInfo/InfoMesseng.h"
 #include "base.h"
 #include "utils.h"

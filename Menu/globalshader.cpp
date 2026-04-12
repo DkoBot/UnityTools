@@ -1,13 +1,15 @@
 ﻿#include "globalshader.h"
+#include "../Misc/ColorInfo/InfoMesseng.h"
 #include <cstring>
 #include <cstdio>
 
 vector<string> globalshader::shaderNames;
 vector<string> globalshader::cachedShaderNames;
 Shader* globalshader::temp_sle_Shader;
+Shader* globalshader::cachedSelectedShader = nullptr;
+vector<ShaderPropertyInfo> globalshader::cachedProperties;
 
 bool globalshader::init() {
-    // 在清空之前，保存当前列表作为缓存
     cachedShaderNames = shaderNames;
     shaderNames.clear();
     
@@ -54,7 +56,17 @@ bool globalshader::init() {
             if (nameStr && !exc) {
                 string shaderName = Engine::il2cppStringToStdString(nameStr);
                 if (!shaderName.empty()) {
-                    shaderNames.push_back(shaderName);
+                    // 去重检查
+                    bool isDuplicate = false;
+                    for (const auto& existing : shaderNames) {
+                        if (existing == shaderName) {
+                            isDuplicate = true;
+                            break;
+                        }
+                    }
+                    if (!isDuplicate) {
+                        shaderNames.push_back(shaderName);
+                    }
                 }
             }
         }
@@ -69,7 +81,6 @@ bool globalshader::get_shader_by_name(const string& name) {
     globalshader::temp_sle_Shader = NULL;
     try {
         il2cpp_thread_attach(il2cpp_domain_get());
-        // 使用 FindShader 通过名称查找 Shader
         Il2CppString* shaderNameStr = Engine::create_il2cpp_string(wstring(name.begin(), name.end()).c_str());
         Shader* shaderObj = FindShader(shaderNameStr);
         
@@ -85,4 +96,81 @@ bool globalshader::get_shader_by_name(const string& name) {
         // 异常处理
         return false;
     }
+}
+vector<ShaderPropertyInfo> globalshader::GetShaderProperties() {
+    vector<ShaderPropertyInfo> properties;
+    Shader* shader = temp_sle_Shader;
+    
+    if (shader) {
+        if (cachedSelectedShader != shader) {
+            cachedSelectedShader = shader;
+            cachedProperties.clear();
+        }
+        int propertyCount = shader->GetPropertyCount();
+        char shaderInfo[256];
+        sprintf_s(shaderInfo, "Shader: 0x%p, Property Count: %d", shader, propertyCount);
+        InfoMesseng::ColorPrint("SUCCESS", shaderInfo, 0);
+
+        for (int i = 0; i < propertyCount; ++i) {
+            ShaderPropertyInfo info;
+            info.type = (int)shader->GetPropertyType(i);
+            Il2CppString* description = shader->GetPropertyDescription(i);
+			info.name = description ? Engine::il2cppStringToStdString(description) : "Unknown";
+            string texturetype = "";
+            string texturevalue = "";
+            switch (info.type) {
+                case ShaderType_Float:
+                    info.floatValue = shader->GetFloat(i);
+                    break;
+                case ShaderType_Range:
+                    info.floatValue = shader->GetFloat(i);
+                    break;
+                case ShaderType_Int:
+                    info.intValue = shader->GetInt(i);
+                    break;
+                case ShaderType_Vector:
+                    info.vectorValue = shader->GetVector(i);
+                    break;
+                case ShaderType_Color:
+                    info.colorValue = shader->GetColor(i);
+                    break;
+                case ShaderType_Texture:
+                    switch (shader->GetTextureDimension(i))
+                    {
+                       case 1:
+                       texturetype = "| 1D";
+                       break;
+                       case 2:
+                       texturetype = "| 2D";
+                       break;
+                       case 3:
+                       texturetype = "| 3D";
+                       break;
+                       case 4:
+                       texturetype = "| 4D";
+                       break;
+                       default:
+                       texturetype = " | Unknown";
+                       break;
+                    }
+
+                    texturevalue = shader->GetTexture(i);
+                    if (texturevalue.empty()) {
+                        texturevalue = "None";
+					}
+					info.textureValue = string(texturevalue) + texturetype;
+					break;
+                default:
+                    break;
+            }
+            cachedProperties.push_back(info);
+            properties.push_back(info);
+        }
+    }
+    
+    return properties;
+}
+
+void globalshader::GetShader() {
+    GetShaderProperties();
 }
